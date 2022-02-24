@@ -1,0 +1,32 @@
+{
+    "name": "DIM Voice Actions",
+    "description": "Control DIM with your voice.",
+    "version": "1.0.0",
+    "manifest_version": 3,
+    "background": {
+      "service_worker": "src/js/background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["https://*.destinyitemmanager.com/*"],
+        "js": ["src/js/dim-voice.js","src/js/fuse.js"]
+      }
+    ],
+    "commands": {
+      "dim-listen": {
+        "suggested_key": {
+          "default": "Ctrl+Shift+0"
+        },
+        "description": "Start listening for DIM commands",
+        "global": true
+      }
+    },
+    "action":{
+      "default_icon": "icon.png",
+      "default_title": "DIM Voice Actions"
+    },
+    "permissions":[
+      "notifications"
+    ]
+  }
+  
