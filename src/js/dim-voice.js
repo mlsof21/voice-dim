@@ -9,6 +9,20 @@ let enterEvent = new KeyboardEvent("keydown", { bubbles: true, which: 13, key: "
 
 function setHtmlElements() {
   searchBar = document.getElementsByName('filter').length > 0 ? document.getElementsByName('filter')[0] : null;
+  if (debugging) {
+    const searchLink = document.getElementsByClassName('search-link')[0];
+    const debugBar = document.createElement("input");
+    debugBar.type = "text";
+    debugBar.id = "debugInput";
+    searchLink.appendChild(debugBar);
+    const debugButton = document.createElement("button");
+    debugButton.id = "debugButton";
+    debugButton.onclick = () => {
+      const value = document.getElementById('debugInput').value;
+      parseSpeech(value);
+    }
+    searchLink.appendChild(debugButton);
+  }
   observer.disconnect();
 }
 
@@ -47,7 +61,7 @@ const weaponTypeQueries = {
   "machine gun": "is:weapon is:machinegun",
   "sword": "is:weapon is:sword",
   "glaive": "is:weapon is:glaive", // doesn't currently work, no search filter in DIM
-}
+};
 
 const energyTypeQueries = {
   "arc": "is:arc",
@@ -55,14 +69,14 @@ const energyTypeQueries = {
   "solar": "is:solar",
   "void": "is:void",
   "stasis": "is:stasis",
-}
+};
 
 const weaponSlotQueries = {
   "kinetic": "is:kinetic",
   "energy": "is:energy",
   "power": "is:power",
   "heavy": "is:power"
-}
+};
 
 const armorTypeQueries = {
   "helmet": "is:armor is:helmet",
@@ -72,7 +86,7 @@ const armorTypeQueries = {
   "legs": "is:armor is:leg",
   "boots": "is:armor is:leg",
   "leg": "is:armor is:leg",
-}
+};
 
 const transferableItemClassNames = [
   "KineticSlot",
@@ -83,24 +97,41 @@ const transferableItemClassNames = [
   "Chest",
   "Leg",
   "ClassItem"
-]
+];
+
+const potentialActions = {
+transfer: handleItemTypeQuery,
+"start farming": handleStartFarmingMode,
+"stop farming": handleStopFarmingMode,
+"equip max power": handleEquipMaxPower,
+"equip loadout": handleEquipLoadout,
+"collect postmaster": handleCollectPostmaster,
+}
 
 function parseSpeech(transcript) {
   console.log("parsing", transcript);
-  let query = transcript.substring(3).trim();
-  if (query.indexOf('transfer') > -1) {
-    handleItemTypeQuery(query.replace('transfer', '').toLowerCase().trim());
-  } else if (query.indexOf("start farming") > -1) {
-    handleStartFarmingMode();
-  } else if (query.indexOf("stop farming") > -1) {
-    handleStopFarmingMode();
-  } else if (query.indexOf('equip max power') > -1) {
-    handleEquipMaxPower();
-  } else if (query.indexOf('equip loadout') > -1 || query.indexOf('equip load out') > -1) {
-    handleEquipLoadout(query.replace(/equip load[\s]?out/, '').trim());
+  let query = transcript.trim();
+  const closestMatch = getClosestMatch(Object.keys(potentialActions), query);
+  console.log({closestMatch});
+
+
+  if(closestMatch.score < .6) {
+    query = query.replace(closestMatch.item, '').trim();
+    potentialActions[closestMatch.item].call(this, query);
   }
-
-
+  // if (query.indexOf('transfer') > -1) {
+  //   handleItemTypeQuery(query.replace('transfer', '').toLowerCase().trim());
+  // } else if (query.indexOf("start farming") > -1) {
+  //   handleStartFarmingMode();
+  // } else if (query.indexOf("stop farming") > -1) {
+  //   handleStopFarmingMode();
+  // } else if (query.indexOf('equip max power') > -1) {
+  //   handleEquipMaxPower();
+  // } else if (query.indexOf('equip loadout') > -1 || query.indexOf('equip load out') > -1) {
+  //   handleEquipLoadout(query.replace(/equip load[\s]?out/, '').trim());
+  // } else if (query.indexOf('collect postmaster') > -1) {
+  //   handleCollectPostmaster();
+  // }
 }
 
 
@@ -119,8 +150,7 @@ function handleItemTypeQuery(query) {
   if (fullQuery === "") {
     const availableItems = getAllTransferableItems();
     const itemToGet = getClosestMatch(Object.keys(availableItems), query);
-    const itemToGetMapped = availableItems[itemToGet.item];
-    const itemDiv = document.querySelector(`[title^="${itemToGetMapped}" i`);
+    const itemDiv = availableItems[itemToGet.item];
     if (itemDiv) {
       itemDiv.dispatchEvent(dblClick);
     }
@@ -161,6 +191,12 @@ function handleEquipLoadout(loadoutName) {
   loadoutToEquipSpan.dispatchEvent(singleClick);
 }
 
+function handleCollectPostmaster() {
+  const postmasterButton = document.querySelector('[class^="PullFromPostmaster"]');
+  postmasterButton.dispatchEvent(singleClick);
+  setTimeout(() => postmasterButton.dispatchEvent(singleClick), 500);
+}
+
 function checkForGenericTerms(queries, query) {
   let fullQuery = "";
   for (const type of Object.keys(queries)) {
@@ -181,7 +217,7 @@ function getAllTransferableItems() {
     result.forEach(item => {
       const split = item.title.split('\n');
       const sanitized = split[0].replaceAll('.', '');
-      items[sanitized] = split[0];
+      items[sanitized] = item;
     });
   }
 
@@ -197,6 +233,20 @@ function getClosestMatch(availableItems, query) {
 
   const result = fuse.search(query);
   console.log({ result, query });
+
+  if(result.length > 0) {
+    return result[0];
+  }
+
+  console.log("Couldn't find a match. Trying to find match by splitting the current query.");
+  const splitQuery = query.split(' ');
+
+  for(const split of splitQuery) {
+    const splitResult = fuse.search(split);
+    console.log({splitResult, split});
+    return splitResult.length > 0 ? splitResult[0] : "";
+  }
+
   return result.length > 0 ? result[0] : "";
 }
 
@@ -233,10 +283,13 @@ function transferByWeaponTypeQuery(searchInput) {
   }
 }
 
+const magic_words = ['dim', 'damn', 'then', 'them'];
+const debugging = true;
+
+
 if (!window.webkitSpeechRecognition) {
   console.log('Sorry this will work only in Chrome for now...');
 }
-const magic_word = 'dim';
 
 // navigator.mediaDevices.getUserMedia({audio: true})
 var SpeechRecognition = window.SpeechRecognition || webkitSpeechRecognition;
@@ -257,8 +310,9 @@ recognition.onerror = (e) => {
 recognition.onresult = e => {
   // console.log({e});
   var transcripts = [].concat.apply([], [...e.results].map(res => [...res].map(alt => alt.transcript)));
-  if (transcripts.some(t => t.indexOf(magic_word) > -1)) {
+  if (transcripts.some(t => magic_words.includes(t))) {
     const fullTranscript = transcripts.join('').toLowerCase();
+    fullTranscript = removeMagicWord(fullTranscript);
     parseSpeech(fullTranscript);
     stopSpeech();
   }
@@ -271,6 +325,16 @@ recognition.onspeechend = () => {
   if (recognizing) {
     stopSpeech();
   }
+}
+
+function removeMagicWord(transcript) {
+  for (const word of magic_words) {
+    if (transcript.includes(word)) {
+      transcript.replace(word, '');
+      break;
+    }
+  }
+  return transcript;
 }
 
 // called when we detect sound
