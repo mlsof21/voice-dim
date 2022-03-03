@@ -1,5 +1,5 @@
 *.zip
 
-/.vscode
+.vscode/
 
-build
+build/
