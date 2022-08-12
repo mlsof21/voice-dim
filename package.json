@@ -1,0 +1,32 @@
+{
+  "name": "dim-voice",
+  "version": "1.0.0",
+  "description": "Perform common DIM actions by using speech recognition.",
+  "main": "dim-voice.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "zip": "py build.py"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mlsof21/dim-voice.git"
+  },
+  "keywords": [
+    "DIM",
+    "Destiny",
+    "2",
+    "speech",
+    "recognition",
+    "voice"
+  ],
+  "author": "mlsof21",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mlsof21/dim-voice/issues"
+  },
+  "homepage": "https://github.com/mlsof21/dim-voice#readme",
+  "dependencies": {
+    "@types/chrome": "^0.0.179",
+    "fuse.js": "^6.5.3"
+  }
+}

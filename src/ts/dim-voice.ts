@@ -1,39 +1,26 @@
+import Fuse from 'fuse.js';
+
 // get html elements
-let searchBar =
-  document.getElementsByName('filter').length > 0
-    ? document.getElementsByName('filter')[0]
-    : null;
+let searchBar = document.getElementsByName('filter').length > 0 ? <HTMLInputElement> document.getElementsByName('filter')[0] : null;
 
-const singleClick = new Event('click', {
+let singleClick = new Event('click', {
   bubbles: true,
   cancelable: true,
-  view: window,
 });
-const dblClick = new Event('dblclick', {
+let dblClick = new Event('dblclick', {
   bubbles: true,
   cancelable: true,
-  view: window,
 });
 
-const inputEvent = new Event('input', { bubbles: true });
-
-const enterEvent = new KeyboardEvent('keydown', {
+let inputEvent = new Event('input', { bubbles: true });
+let enterEvent = new KeyboardEvent('keydown', {
   bubbles: true,
   which: 13,
-  key: 'Enter',
-});
-
-const escapeEvent = new KeyboardEvent('keydown', {
-  bubbles: true,
-  which: 27,
-  key: 'Escape',
+  key: 'enter',
 });
 
 function setHtmlElements() {
-  searchBar =
-    document.getElementsByName('filter').length > 0
-      ? document.getElementsByName('filter')[0]
-      : null;
+  searchBar = document.getElementsByName('filter').length > 0 ? <HTMLInputElement> document.getElementsByName('filter')[0] : null;
   if (debugging) {
     const searchLink = document.getElementsByClassName('search-link')[0];
     const debugBar = document.createElement('input');
@@ -43,7 +30,7 @@ function setHtmlElements() {
     const debugButton = document.createElement('button');
     debugButton.id = 'debugButton';
     debugButton.onclick = () => {
-      const value = document.getElementById('debugInput').value;
+      const value = (document.getElementById('debugInput') as HTMLInputElement).value;
       parseSpeech(value);
     };
     searchLink.appendChild(debugButton);
@@ -51,22 +38,22 @@ function setHtmlElements() {
   observer.disconnect();
 }
 
-function setNativeValue(element, value) {
-  const valueSetter = Object.getOwnPropertyDescriptor(element, 'value').set;
-  const prototype = Object.getPrototypeOf(element);
-  const prototypeValueSetter = Object.getOwnPropertyDescriptor(
-    prototype,
-    'value'
-  ).set;
+// function setNativeValue(element, value) {
+//   const valueSetter = Object.getOwnPropertyDescriptor(element, 'value').set;
+//   const prototype = Object.getPrototypeOf(element);
+//   const prototypeValueSetter = Object.getOwnPropertyDescriptor(
+//     prototype,
+//     'value'
+//   ).set;
 
-  if (valueSetter && valueSetter !== prototypeValueSetter) {
-    prototypeValueSetter.call(element, value);
-  } else {
-    valueSetter.call(element, value);
-  }
-}
+//   if (valueSetter && valueSetter !== prototypeValueSetter) {
+//     prototypeValueSetter.call(element, value);
+//   } else {
+//     valueSetter.call(element, value);
+//   }
+// }
 
-const weaponTypeQueries = {
+const weaponTypeQueries: Record<string, string> = {
   'auto rifle': 'is:weapon is:autorifle',
   autorifle: 'is:weapon is:autorifle',
   'hand cannon': 'is:weapon is:handcannon',
@@ -86,11 +73,10 @@ const weaponTypeQueries = {
   machinegun: 'is:weapon is:machinegun',
   'machine gun': 'is:weapon is:machinegun',
   sword: 'is:weapon is:sword',
-  glaive: 'is:weapon is:glaive', // doesn't currently work, no search filter in DIM,
-  crafted: 'is:weapon is:crafted',
+  glaive: 'is:weapon is:glaive', // doesn't currently work, no search filter in DIM
 };
 
-const energyTypeQueries = {
+const energyTypeQueries: Record<string, string> = {
   arc: 'is:arc',
   ark: 'is:arc',
   solar: 'is:solar',
@@ -98,19 +84,14 @@ const energyTypeQueries = {
   stasis: 'is:stasis',
 };
 
-const weaponSlotQueries = {
+const weaponSlotQueries: Record<string, string> = {
   kinetic: 'is:kinetic',
   energy: 'is:energy',
   power: 'is:power',
+  heavy: 'is:power',
 };
 
-const ammoTypeQueries = {
-  primary: 'is:primary',
-  special: 'is:special',
-  heavy: 'is:heavy',
-};
-
-const armorTypeQueries = {
+const armorTypeQueries: Record<string, string> = {
   helmet: 'is:armor is:helmet',
   arms: 'is:armor is:gauntlets',
   gauntlets: 'is:armor is:gauntlets',
@@ -120,62 +101,56 @@ const armorTypeQueries = {
   leg: 'is:armor is:leg',
 };
 
-// const transferableItemClassNames = [
-//   'KineticSlot',
-//   'Energy',
-//   'Power',
-//   'Helmet',
-//   'Gauntlets',
-//   'Chest',
-//   'Leg',
-//   'ClassItem',
-// ];
-
-const transferableItemAriaLabels = [
-  'Kinetic Weapons',
-  'Energy Weapons',
-  'Power Weapons',
+const transferableItemClassNames: string[] = [
+  'KineticSlot',
+  'Energy',
+  'Power',
   'Helmet',
   'Gauntlets',
-  'Chest Armor',
-  'Leg Armor',
-  'Class Armor',
+  'Chest',
+  'Leg',
+  'ClassItem',
 ];
 
-const potentialActions = {
+const potentialActions: Record<string, () => void | ((query: string) => string | ((loadoutName: string) => void))> = {
   transfer: handleItemTypeQuery,
   'start farming': handleStartFarmingMode,
   'stop farming': handleStopFarmingMode,
   'equip max power': handleEquipMaxPower,
   'equip loadout': handleEquipLoadout,
-  'equip load out': handleEquipLoadout,
-  'collect post master': handleCollectPostmaster,
   'collect postmaster': handleCollectPostmaster,
 };
 
-function parseSpeech(transcript) {
+function parseSpeech(transcript: string) {
   console.log('parsing', transcript);
   let query = transcript.trim();
   const closestMatch = getClosestMatch(Object.keys(potentialActions), query);
+  if (closestMatch === '') {
+    return;
+  }
   console.log({ closestMatch });
 
   query = query.replace(closestMatch.item, '').trim();
   potentialActions[closestMatch.item].call(this, query);
+  // if (query.indexOf('transfer') > -1) {
+  //   handleItemTypeQuery(query.replace('transfer', '').toLowerCase().trim());
+  // } else if (query.indexOf("start farming") > -1) {
+  //   handleStartFarmingMode();
+  // } else if (query.indexOf("stop farming") > -1) {
+  //   handleStopFarmingMode();
+  // } else if (query.indexOf('equip max power') > -1) {
+  //   handleEquipMaxPower();
+  // } else if (query.indexOf('equip loadout') > -1 || query.indexOf('equip load out') > -1) {
+  //   handleEquipLoadout(query.replace(/equip load[\s]?out/, '').trim());
+  // } else if (query.indexOf('collect postmaster') > -1) {
+  //   handleCollectPostmaster();
+  // }
 }
 
-function handleItemTypeQuery(query) {
-  query = query.replace('transfer', '');
-  console.log('In handleItemTypeQuery, handling', query);
-
+function handleItemTypeQuery(query: string) {
   let fullQuery = '';
 
-  const genericQueries = [
-    weaponTypeQueries,
-    energyTypeQueries,
-    weaponSlotQueries,
-    armorTypeQueries,
-    ammoTypeQueries,
-  ];
+  const genericQueries = [weaponTypeQueries, energyTypeQueries, weaponSlotQueries, armorTypeQueries];
 
   for (const genericQuery of genericQueries) {
     fullQuery += checkForGenericTerms(genericQuery, query);
@@ -184,15 +159,14 @@ function handleItemTypeQuery(query) {
   fullQuery = fullQuery.trim();
 
   if (fullQuery === '') {
-    console.log('looking for', query);
-
     const availableItems = getAllTransferableItems();
+    if(availableItems) {
     const itemToGet = getClosestMatch(Object.keys(availableItems), query);
     const itemDiv = availableItems[itemToGet.item];
-
     if (itemDiv) {
       itemDiv.dispatchEvent(dblClick);
     }
+  }
   } else {
     console.log('Full query being sent to DIM: ' + fullQuery);
     transferByWeaponTypeQuery(fullQuery);
@@ -201,68 +175,47 @@ function handleItemTypeQuery(query) {
 }
 
 function handleStartFarmingMode() {
-  console.log('Starting farming mode');
-  const currentCharacter = document.querySelector('.character.current');
+  const currentCharacter = <HTMLElement>document.querySelector('.character.current');
   currentCharacter.dispatchEvent(singleClick);
-  setTimeout(() => {
-    const farmingSpan = [
-      ...document.querySelectorAll('.loadout-menu span'),
-    ].filter((x) => x.textContent.includes('Farming'))[0];
-    farmingSpan.dispatchEvent(singleClick);
-  }, 500);
+  const farmingSpan = [...document.querySelectorAll('.loadout-menu span')].filter((x) =>
+    (<HTMLElement>x).textContent?.includes('Farming')
+  )[0];
+  farmingSpan.dispatchEvent(singleClick);
 }
 
 function handleStopFarmingMode() {
-  const stopButton = document.querySelector('#item-farming button');
+  const stopButton = <HTMLElement>document.querySelector('#item-farming button');
   stopButton.dispatchEvent(singleClick);
 }
 
 function handleEquipMaxPower() {
-  const currentCharacter = document.querySelector('.character.current');
+  const currentCharacter = <HTMLElement>document.querySelector('.character.current');
   currentCharacter.dispatchEvent(singleClick);
-  setTimeout(() => {
-    const maxPowerSpan = [
-      ...document.querySelectorAll('.loadout-menu span'),
-    ].filter((x) => x.textContent.includes('Max Power'))[0];
-    maxPowerSpan.dispatchEvent(singleClick);
-  }, 500);
+  const maxPowerSpan = [...document.querySelectorAll('.loadout-menu span')].filter((x) =>
+    (<HTMLElement>x).textContent?.includes('Max Power')
+  )[0];
+  maxPowerSpan.dispatchEvent(singleClick);
 }
 
-function handleEquipLoadout(loadoutName) {
-  console.log('Equipping loadout', loadoutName);
-  if (
-    loadoutName.includes('equip loadout') ||
-    loadoutName.includes('equip load out')
-  )
-    loadoutName = loadoutName
-      .replace('equip loadout', '')
-      .replace('equip load out', '');
-  const currentCharacter = document.querySelector('.character.current');
+function handleEquipLoadout(loadoutName: string) {
+  const currentCharacter = <HTMLElement>document.querySelector('.character.current');
   currentCharacter.dispatchEvent(singleClick);
-  setTimeout(() => {
-    const availableLoadoutNames = [
-      ...document.querySelectorAll(
-        '.loadout-menu li > span[title]:first-child'
-      ),
-    ].map((x) => x.textContent);
-    const loadoutResult = getClosestMatch(availableLoadoutNames, loadoutName);
-    const loadoutToEquip = loadoutResult.item;
-    const loadoutToEquipSpan = document.querySelector(
-      `.loadout-menu span[title="${loadoutToEquip}"]`
-    );
-    loadoutToEquipSpan.dispatchEvent(singleClick);
-  }, 500);
+  const availableLoadoutNames = [...document.querySelectorAll('.loadout-menu li > span[title]:first-child')].map(
+    (x) => x.textContent
+  );
+  const loadoutResult = getClosestMatch(availableLoadoutNames, loadoutName);
+  const loadoutToEquip = loadoutResult.item;
+  const loadoutToEquipSpan =  <HTMLElement> document.querySelector(`.loadout-menu span[title="${loadoutToEquip}"]`);
+  loadoutToEquipSpan.dispatchEvent(singleClick);
 }
 
 function handleCollectPostmaster() {
-  const postmasterButton = document.querySelector(
-    '[class^="PullFromPostmaster"]'
-  );
+  const postmasterButton = <HTMLElement> document.querySelector('[class^="PullFromPostmaster"]');
   postmasterButton.dispatchEvent(singleClick);
   setTimeout(() => postmasterButton.dispatchEvent(singleClick), 500);
 }
 
-function checkForGenericTerms(queries, query) {
+function checkForGenericTerms(queries: Record<string, string>, query: string) {
   let fullQuery = '';
   for (const type of Object.keys(queries)) {
     const search = `\\b${type}\\b`;
@@ -276,27 +229,23 @@ function checkForGenericTerms(queries, query) {
 }
 
 function getAllTransferableItems() {
-  const items = {};
-  for (const labelName of transferableItemAriaLabels) {
-    const result = document.querySelectorAll(
-      `[aria-label="${labelName}"] .item`
-    );
+  const items: Record<string, HTMLElement> = {};
+  for (const className of transferableItemClassNames) {
+    const result = document.querySelectorAll(`.item-type-${className} .item`);
     result.forEach((item) => {
-      const split = item.title.split('\n');
-      const sanitized = split[0].replaceAll('.', '');
-      items[sanitized] = item;
+      const split = (item as HTMLElement).title.split('\n');
+      const sanitized = split[0].replace('.', '');
+      items[sanitized] = item as HTMLElement;
     });
   }
 
   return items;
 }
 
-function getClosestMatch(availableItems, query) {
+function getClosestMatch(availableItems: string[], query: string): Fuse.FuseResult<string> | string {
   const options = {
     includeScore: true,
-    shouldSort: true,
   };
-  console.log({ availableItems });
 
   const fuse = new Fuse(availableItems, options);
 
@@ -307,9 +256,7 @@ function getClosestMatch(availableItems, query) {
     return result[0];
   }
 
-  console.log(
-    "Couldn't find a match. Trying to find match by splitting the current query."
-  );
+  console.log("Couldn't find a match. Trying to find match by splitting the current query.");
   const splitQuery = query.split(' ');
 
   for (const split of splitQuery) {
@@ -321,23 +268,15 @@ function getClosestMatch(availableItems, query) {
   return result.length > 0 ? result[0] : '';
 }
 
-function transferByWeaponTypeQuery(searchInput) {
-  if (!searchBar) searchBar = document.getElementsByName('filter')[0];
+function transferByWeaponTypeQuery(searchInput: string) {
   if (searchBar) {
-    // setNativeValue(searchBar, searchInput);
     searchBar.value = searchInput;
     const inputFunc = function () {
-      searchBar.dispatchEvent(inputEvent);
+      searchBar?.dispatchEvent(inputEvent);
     };
 
     const enterFunc = function () {
-      searchBar.focus();
-      setTimeout(() => {}, 500);
-      searchBar.dispatchEvent(enterEvent);
-    };
-
-    const escapeFunc = function () {
-      searchBar.dispatchEvent(escapeEvent);
+      searchBar?.dispatchEvent(enterEvent);
     };
 
     const transferFunc = function () {
@@ -350,9 +289,8 @@ function transferByWeaponTypeQuery(searchInput) {
       }
     };
     const actions = [
-      { func: inputFunc, timeout: 100 },
-      { func: enterFunc, timeout: 1000 },
-      // { func: escapeFunc, timeout: 500 },
+      { func: inputFunc, timeout: 500 },
+      { func: enterFunc, timeout: 500 },
       { func: transferFunc, timeout: 2000 },
     ];
 
@@ -367,15 +305,16 @@ function transferByWeaponTypeQuery(searchInput) {
 const magic_words = ['dim', 'damn', 'then', 'them'];
 const debugging = true;
 
-if (!window.webkitSpeechRecognition) {
-  console.log('Sorry this will work only in Chrome for now...');
+export interface IWindow extends Window {
+  webkitSpeechRecognition: any;
 }
 
+
 // navigator.mediaDevices.getUserMedia({audio: true})
-var SpeechRecognition = window.SpeechRecognition || webkitSpeechRecognition;
+const {webkitSpeechRecognition} : IWindow = window as any;
 
 // initialize our SpeechRecognition object
-var recognition = new SpeechRecognition();
+var recognition = new webkitSpeechRecognition();
 recognition.lang = 'en-US';
 recognition.interimResults = false;
 // recognition.maxAlternatives = 1;
@@ -386,19 +325,15 @@ recognition.onerror = (e) => {
   console.error('Error with speech recognition:', e);
 };
 
-recognition.onresult = (e) => {
+recognition.onresult = (e: SpeechRecognitionEvent) => {
   // console.log({e});
-  var transcripts = [].concat.apply(
-    [],
-    [...e.results].map((res) => [...res].map((alt) => alt.transcript))
-  );
+  let finalContent = 
+  
   if (transcripts.some((t) => magic_words.some((word) => t.includes(word)))) {
     parseSpeech(removeMagicWord(transcripts.join('').toLowerCase()));
     stopSpeech();
   } else {
-    console.log('no magic word, understood ' + JSON.stringify(transcripts));
-    parseSpeech(transcripts.join('').toLowerCase());
-    stopSpeech();
+    console.log('understood ' + JSON.stringify(transcripts));
   }
 };
 // called when we detect silence
@@ -408,15 +343,13 @@ recognition.onspeechend = () => {
   }
 };
 
-function removeMagicWord(transcript) {
+function removeMagicWord(transcript: string) {
   for (const word of magic_words) {
-    console.log('checking transcript for', word);
     if (transcript.includes(word)) {
-      transcript = transcript.replace(word, '');
+      transcript.replace(word, '');
       break;
     }
   }
-  console.log('returning transcript:', transcript);
   return transcript;
 }
 
@@ -448,13 +381,8 @@ function showListeningNotification() {
 }
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  console.log(
-    sender.tab
-      ? 'from a content script:' + sender.tab.url
-      : 'from the extension'
-  );
-  if (request.dimShouldListen === 'DIM listen shortcut has been triggered.')
-    sendResponse({ ack: 'Acknowledged.' });
+  console.log(sender.tab ? 'from a content script:' + sender.tab.url : 'from the extension');
+  if (request.dimShouldListen === 'DIM listen shortcut has been triggered.') sendResponse({ ack: 'Acknowledged.' });
   startSpeech();
   return true;
 });
@@ -464,8 +392,10 @@ let observer = new MutationObserver((mutations) => {
     if (!mutation.addedNodes) return;
 
     for (let i = 0; i < mutation.addedNodes.length; i++) {
-      let node = mutation.addedNodes[i];
+      let node = mutation.addedNodes[i] as HTMLElement;
+      // console.log({ node })
       if (node.className && node.className.toLowerCase() == 'search-link') {
+        setHtmlElements();
         break;
       }
     }

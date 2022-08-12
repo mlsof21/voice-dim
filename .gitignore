@@ -1,5 +1,9 @@
-*.zip
-
 .vscode/
 
+# ts folders
+node_modules/
+
+
+# python folders
 build/
+env/
