@@ -21,7 +21,10 @@
       "global": true
     }
   },
-
+  "action": {
+    "default_icon": "assets/icons/icon_128.png",
+    "default_title": "DIM Voice Actions"
+  },
   "icons": {
     "16": "assets/icons/icon_16.png",
     "32": "assets/icons/icon_32.png",
