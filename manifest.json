@@ -1,5 +1,5 @@
 {
-  "name": "DIM Voice Actions",
+  "name": "DIM Voice",
   "description": "Control DIM with your voice.",
   "version": "1.0.0",
   "manifest_version": 3,
@@ -15,9 +15,9 @@
   "commands": {
     "dim-listen": {
       "suggested_key": {
-        "default": "Ctrl+Shift+L"
+        "default": "Ctrl+L"
       },
-      "description": "Start listening for DIM commands",
+      "description": "Start/Stop listening for DIM commands",
       "global": true
     }
   },
@@ -32,5 +32,5 @@
     "64": "assets/icons/icon_64.png",
     "128": "assets/icons/icon_128.png"
   },
-  "permissions": ["notifications"]
+  "permissions": ["tabs"]
 }

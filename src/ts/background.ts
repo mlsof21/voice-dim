@@ -1,26 +1,24 @@
 chrome.commands.onCommand.addListener((command) => {
-  console.log(`Command "${command}" triggered`);
+  console.log(`[dim-voice] Command "${command}" triggered`);
 
-  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+  chrome.tabs.query({}, function (tabs) {
+    const dimTab = tabs.filter((tab) =>
+      tab.url.includes('destinyitemmanager.com')
+    )[0];
+
     chrome.tabs.sendMessage(
-      tabs[0].id,
-      { dimShouldListen: 'DIM listen shortcut has been triggered.' },
+      dimTab.id,
+      { dimShortcutPressed: true },
       function (response) {
-        console.log(response.ack);
+        console.log('[dim-voice]', response.ack);
       }
     );
   });
 });
 
 chrome.runtime.onMessage.addListener((data) => {
+  console.log({ data });
   if (data.type === 'notification') {
     console.log('creating notification');
-    chrome.notifications.create('test', {
-      type: 'basic',
-      iconUrl: '../../icon_128.png',
-      title: 'DIM is listening',
-      message: 'DIM is listening for a command.',
-      priority: 2,
-    });
   }
 });
