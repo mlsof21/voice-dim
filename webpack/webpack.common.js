@@ -1,16 +1,18 @@
 const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
+const srcDir = path.join(__dirname, '..', 'src', 'ts');
+
 module.exports = {
-  mode: 'production',
   entry: {
-    background: path.resolve(__dirname, 'src', 'ts', 'background.ts'),
+    background: path.join(srcDir, 'background.ts'),
+    content_script: path.join(srcDir, 'dim-voice.ts'),
   },
   output: {
     path: path.join(__dirname, '../dist'),
     filename: '[name].js',
   },
   resolve: {
-    extensions: ['.ts'],
+    extensions: ['.ts', '.js'],
   },
   module: {
     rules: [
@@ -21,9 +23,17 @@ module.exports = {
       },
     ],
   },
+  optimization: {
+    splitChunks: {
+      name: 'dim-voice',
+      chunks(chunk) {
+        return chunk.name !== 'background';
+      },
+    },
+  },
   plugins: [
     new CopyPlugin({
-      patterns: [{ from: '.', to: '.' }],
+      patterns: [{ from: '.', to: '../', context: 'public' }],
     }),
   ],
 };

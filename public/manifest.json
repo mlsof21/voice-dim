@@ -1,7 +1,7 @@
 {
-  "name": "Voice DIM",
+  "name": "DIM Voice",
   "description": "Control DIM with your voice.",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "manifest_version": 3,
   "background": {
     "service_worker": "js/background.js"
@@ -15,7 +15,7 @@
   "commands": {
     "dim-listen": {
       "suggested_key": {
-        "default": "Ctrl+Shift+0"
+        "default": "Ctrl+L"
       },
       "description": "Start/Stop listening for DIM commands",
       "global": true
@@ -23,7 +23,7 @@
   },
   "action": {
     "default_icon": "assets/icons/icon_128.png",
-    "default_title": "Voice DIM"
+    "default_title": "DIM Voice Actions"
   },
   "icons": {
     "16": "assets/icons/icon_16.png",

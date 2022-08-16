@@ -36,13 +36,11 @@ const inputEvent = new KeyboardEvent('input', { bubbles: true });
 
 const enterEvent = new KeyboardEvent('keydown', {
   bubbles: true,
-  which: 13,
   key: 'Enter',
 });
 
 const escapeEvent = new KeyboardEvent('keydown', {
   bubbles: true,
-  which: 27,
   key: 'Escape',
 });
 
@@ -66,8 +64,7 @@ function setHtmlElements() {
     debugButton.id = 'debugButton';
     debugButton.innerText = 'submit';
     debugButton.onclick = () => {
-      const value = (<HTMLInputElement>document.getElementById('debugInput'))
-        .value;
+      const value = (<HTMLInputElement>document.getElementById('debugInput')).value;
       parseSpeech(value);
     };
     searchLink.appendChild(debugButton);
@@ -76,18 +73,12 @@ function setHtmlElements() {
 }
 
 function setNativeValue(element: HTMLInputElement, value: string) {
-  const valueSetter =
-    Object.getOwnPropertyDescriptor(element, 'value')?.set ?? null;
+  const valueSetter = Object.getOwnPropertyDescriptor(element, 'value')?.set ?? null;
   if (!valueSetter) return;
   const prototype = Object.getPrototypeOf(element);
-  const prototypeValueSetter =
-    Object.getOwnPropertyDescriptor(prototype, 'value')?.set ?? null;
+  const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set ?? null;
 
-  if (
-    valueSetter &&
-    prototypeValueSetter &&
-    valueSetter !== prototypeValueSetter
-  ) {
+  if (valueSetter && prototypeValueSetter && valueSetter !== prototypeValueSetter) {
     prototypeValueSetter.call(element, value);
   } else {
     valueSetter.call(element, value);
@@ -178,10 +169,7 @@ const transferableItemAriaLabels = [
   'Class Armor',
 ];
 
-const potentialActions: Record<
-  string,
-  (() => void) | ((loadoutName: string) => void)
-> = {
+const potentialActions: Record<string, (() => void) | ((loadoutName: string) => void)> = {
   transfer: handleItemTypeQuery,
   'start farming': handleStartFarmingMode,
   'stop farming': handleStopFarmingMode,
@@ -282,10 +270,8 @@ function handleStartFarmingMode() {
   if (currentCharacter) {
     currentCharacter.dispatchEvent(singleClick);
     setTimeout(() => {
-      const farmingSpan = [
-        ...document.querySelectorAll('.loadout-menu span'),
-      ].filter((x) => x?.textContent?.includes('Farming'))[0];
-      farmingSpan.dispatchEvent(singleClick);
+      const farmingSpan = getLoadoutSpanByLoadoutName('Farming');
+      farmingSpan?.dispatchEvent(singleClick);
     }, 500);
   }
 }
@@ -302,46 +288,50 @@ function handleEquipMaxPower() {
   if (currentCharacter) {
     currentCharacter.dispatchEvent(singleClick);
     setTimeout(() => {
-      const maxPowerSpan = [
-        ...document.querySelectorAll('.loadout-menu span'),
-      ].filter((x) => x?.textContent?.includes('Max Power'))[0];
-      maxPowerSpan.dispatchEvent(singleClick);
+      const maxPowerSpan = getLoadoutSpanByLoadoutName('Max Power');
+      maxPowerSpan?.dispatchEvent(singleClick);
     }, 500);
   }
 }
 
+function getLoadoutSpanByLoadoutName(loadoutName: string): Element | null {
+  const loadoutMenuSpans = document.querySelectorAll('.loadout-menu span');
+  loadoutMenuSpans.forEach((span) => {
+    if (span.textContent?.includes(loadoutName)) {
+      return span;
+    }
+  });
+  return null;
+}
+
 function handleEquipLoadout(loadoutName: string) {
   console.log('Equipping loadout', loadoutName);
-  if (
-    loadoutName.includes('equip loadout') ||
-    loadoutName.includes('equip load out')
-  )
-    loadoutName = loadoutName
-      .replace('equip loadout', '')
-      .replace('equip load out', '');
+  if (loadoutName.includes('equip loadout') || loadoutName.includes('equip load out'))
+    loadoutName = loadoutName.replace('equip loadout', '').replace('equip load out', '');
   const currentCharacter = document.querySelector('.character.current');
   if (currentCharacter) currentCharacter.dispatchEvent(singleClick);
   setTimeout(() => {
-    const availableLoadoutNames = [
-      ...document.querySelectorAll(
-        '.loadout-menu li > span[title]:first-child'
-      ),
-    ].map((x) => x.textContent ?? '');
+    const availableLoadoutNames = getLoadoutNames();
     const loadoutResult = getClosestMatch(availableLoadoutNames, loadoutName);
     const loadoutToEquip = loadoutResult;
-    const loadoutToEquipSpan = document.querySelector(
-      `.loadout-menu span[title="${loadoutToEquip}"]`
-    );
+    const loadoutToEquipSpan = document.querySelector(`.loadout-menu span[title="${loadoutToEquip}"]`);
     if (loadoutToEquipSpan) {
       loadoutToEquipSpan.dispatchEvent(singleClick);
     }
   }, 500);
 }
 
+function getLoadoutNames(): string[] {
+  const loadoutNames: string[] = [];
+  const loadoutSpans = document.querySelectorAll('.loadout-menu li > span[title]:first-child');
+  loadoutSpans.forEach((span) => {
+    if (span.textContent) loadoutNames.push(span.textContent);
+  });
+  return loadoutNames;
+}
+
 function handleCollectPostmaster() {
-  const postmasterButton = document.querySelector(
-    '[class^="PullFromPostmaster"]'
-  );
+  const postmasterButton = document.querySelector('[class^="PullFromPostmaster"]');
   if (postmasterButton) {
     postmasterButton.dispatchEvent(singleClick);
     setTimeout(() => postmasterButton.dispatchEvent(singleClick), 500);
@@ -364,9 +354,7 @@ function checkForGenericTerms(queries: Record<string, string>, query: string) {
 function getAllTransferableItems(): Record<string, Element> {
   const items: Record<string, Element> = {};
   for (const labelName of transferableItemAriaLabels) {
-    const result = document.querySelectorAll(
-      `[aria-label="${labelName}"] .item`
-    );
+    const result = document.querySelectorAll(`[aria-label="${labelName}"] .item`);
     const filteredItems = getVisibleItems(result);
     filteredItems.forEach((item) => {
       const split = (<HTMLElement>item).title.split('\n');
@@ -394,9 +382,7 @@ function getClosestMatch(availableItems: string[], query: string): string {
     return result[0].item;
   }
 
-  console.log(
-    "Couldn't find a match. Trying to find match by splitting the current query."
-  );
+  console.log("Couldn't find a match. Trying to find match by splitting the current query.");
   const splitQuery = query.split(' ');
 
   for (const split of splitQuery) {
@@ -410,8 +396,7 @@ function getClosestMatch(availableItems: string[], query: string): string {
 
 function populateSearchBar(searchInput: string) {
   console.log('Populating search bar with', searchInput);
-  if (!searchBar)
-    searchBar = <HTMLInputElement>document.getElementsByName('filter')[0];
+  if (!searchBar) searchBar = <HTMLInputElement>document.getElementsByName('filter')[0];
   if (searchBar) {
     searchBar.value = searchInput;
     const inputFunc = function () {
@@ -450,11 +435,13 @@ function performUiInteraction(actions: Action[]) {
   }
 }
 
-function getVisibleItems(items: NodeListOf<Element> | undefined = undefined) {
+function getVisibleItems(items: NodeListOf<Element> | undefined = undefined): Element[] {
   if (!items) items = document.querySelectorAll('div.item');
-  return [...items].filter(
-    (x) => parseFloat(window.getComputedStyle(x, null).opacity) > 0.2
-  );
+  const result: Element[] = [];
+  items.forEach((x) => {
+    if (parseFloat(window.getComputedStyle(x, null).opacity) > 0.2) result;
+  });
+  return result;
 }
 
 function transferByWeaponTypeQuery(searchInput: string) {
@@ -550,11 +537,7 @@ function stopSpeech() {
 }
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  console.log(
-    sender.tab
-      ? 'from a content script:' + sender.tab.url
-      : 'from the extension'
-  );
+  console.log(sender.tab ? 'from a content script:' + sender.tab.url : 'from the extension');
   if (request.dimShortcutPressed) {
     sendResponse({ ack: 'Acknowledged.' });
     if (!recognizing) {
@@ -578,9 +561,7 @@ async function getManifest(): Promise<DestinyManifest> {
   return response.Response;
 }
 
-async function getDestinyInventoryItemManifest(): Promise<
-  DestinyManifestSlice<['DestinyInventoryItemDefinition']>
-> {
+async function getDestinyInventoryItemManifest(): Promise<DestinyManifestSlice<['DestinyInventoryItemDefinition']>> {
   const manifest = await getManifest();
   const manifestSlice = await getDestinyManifestSlice($http, {
     destinyManifest: manifest,
@@ -595,9 +576,7 @@ async function getPerks() {
   createMaps(inventoryItemManifest);
 }
 
-function createMaps(
-  manifest: DestinyManifestSlice<['DestinyInventoryItemDefinition']>
-) {
+function createMaps(manifest: DestinyManifestSlice<['DestinyInventoryItemDefinition']>) {
   const validPlugs = [
     'barrels',
     'batteries',
@@ -619,10 +598,7 @@ function createMaps(
     // Only map weapons
     if (item && item.itemType === 19) {
       const plugCategoryIdentifier = item.plug?.plugCategoryIdentifier ?? '';
-      if (
-        validPlugs.includes(plugCategoryIdentifier) &&
-        item.displayProperties.name !== ''
-      ) {
+      if (validPlugs.includes(plugCategoryIdentifier) && item.displayProperties.name !== '') {
         knownPerks.push(item.displayProperties.name.toLowerCase());
       }
     }

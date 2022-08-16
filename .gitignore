@@ -4,7 +4,7 @@
 
 # ts folders
 node_modules/
-
+dist/
 
 # python folders
 build/
