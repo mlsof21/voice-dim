@@ -3,16 +3,17 @@ chrome.commands.onCommand.addListener((command) => {
 
   chrome.tabs.query({}, function (tabs) {
     const dimTab = tabs.filter((tab) =>
-      tab.url.includes('destinyitemmanager.com')
+      tab.url?.includes('destinyitemmanager.com')
     )[0];
 
-    chrome.tabs.sendMessage(
-      dimTab.id,
-      { dimShortcutPressed: true },
-      function (response) {
-        console.log('[dim-voice]', response.ack);
-      }
-    );
+    if (dimTab.id)
+      chrome.tabs.sendMessage(
+        dimTab.id,
+        { dimShortcutPressed: true },
+        function (response) {
+          console.log('[dim-voice]', response.ack);
+        }
+      );
   });
 });
 

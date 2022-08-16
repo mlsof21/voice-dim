@@ -20,6 +20,7 @@ const singleClick = new Event('click', {
   cancelable: true,
   view: window,
 });
+
 const dblClick = new Event('dblclick', {
   bubbles: true,
   cancelable: true,
@@ -447,7 +448,7 @@ function transferByWeaponTypeQuery(searchInput) {
   performUiInteraction(actions);
 }
 
-const magic_words = ['dim', 'damn', 'then', 'them'];
+const dimWords = ['dim', 'damn', 'then', 'them'];
 const debugging = true;
 
 if (!window.webkitSpeechRecognition) {
@@ -461,7 +462,6 @@ var SpeechRecognition = window.SpeechRecognition || webkitSpeechRecognition;
 var recognition = new SpeechRecognition();
 recognition.lang = 'en-US';
 recognition.interimResults = false;
-// recognition.maxAlternatives = 1;
 recognition.continuous = false;
 let recognizing = false;
 
@@ -471,16 +471,13 @@ recognition.onerror = (e) => {
 };
 
 recognition.onresult = (e) => {
-  var transcripts = [].concat.apply(
-    [],
-    [...e.results].map((res) => [...res].map((alt) => alt.transcript))
-  );
-  if (transcripts.some((t) => magic_words.some((word) => t.includes(word)))) {
-    parseSpeech(removeMagicWord(transcripts.join('').toLowerCase()));
+  const transcript = e.results[0][0].transcript.toLowerCase();
+  if (dimWords.some((word) => transcript.startsWith(word))) {
+    parseSpeech(removeMagicWord(transcript));
     stopSpeech();
   } else {
-    console.log('no magic word, understood ' + JSON.stringify(transcripts));
-    parseSpeech(transcripts.join('').toLowerCase());
+    console.log('no magic word, understood ', transcript);
+    parseSpeech(transcript);
     stopSpeech();
   }
 };
@@ -493,9 +490,9 @@ recognition.onspeechend = () => {
 };
 
 function removeMagicWord(transcript) {
-  for (const word of magic_words) {
+  for (const word of dimWords) {
     console.log('checking transcript for', word);
-    if (transcript.includes(word)) {
+    if (transcript.startsWith(word)) {
       transcript = transcript.replace(word, '');
       break;
     }
