@@ -5,11 +5,14 @@ const srcDir = path.join(__dirname, '..', 'src', 'ts');
 module.exports = {
   entry: {
     background: path.join(srcDir, 'background.ts'),
-    content_script: path.join(srcDir, 'dim-voice.ts'),
+    'dim-voice': path.join(srcDir, 'dim-voice.ts'),
+    options: path.join(srcDir, 'options.ts'),
+    common: path.join(srcDir, 'common.ts'),
   },
   output: {
-    path: path.join(__dirname, '../dist'),
+    path: path.join(__dirname, '..', 'dist', 'js'),
     filename: '[name].js',
+    clean: true,
   },
   resolve: {
     extensions: ['.ts', '.js'],
@@ -23,17 +26,13 @@ module.exports = {
       },
     ],
   },
-  optimization: {
-    splitChunks: {
-      name: 'dim-voice',
-      chunks(chunk) {
-        return chunk.name !== 'background';
-      },
-    },
-  },
   plugins: [
     new CopyPlugin({
-      patterns: [{ from: '.', to: '../', context: 'public' }],
+      patterns: [
+        { from: '.', to: '..', context: 'public' },
+        { from: 'html/', to: '../html/', context: 'src' },
+        { from: 'css/', to: '../css/', context: 'src' },
+      ],
     }),
   ],
 };

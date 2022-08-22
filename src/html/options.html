@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Voice DIM Options</title>
+    <link rel="stylesheet" href="../css/options.css" />
+  </head>
+  <body>
+    <h1>Voice DIM Options</h1>
+
+    <p>
+      Enter your own custom voice commands for each of the actions below. If you want multiple voice commands to perform
+      the same action, separate the commands with a comma (ex. for <code>Transfer weapon</code>: transfer, get)
+    </p>
+    <ul class="wrapper">
+      <li class="form-row"><span class="action">Action</span><span class="command">Voice Command</span></li>
+      <li class="form-row"><label for="transfer">Transfer weapon: </label><input id="transfer" type="text" /></li>
+      <li class="form-row"><label for="loadout">Equip loadout: </label><input id="loadout" type="text" /></li>
+      <li class="form-row"><label for="maxPower">Equip max power: </label><input id="maxPower" type="text" /></li>
+      <li class="form-row">
+        <label for="postmaster">Collect postmaster: </label><input id="postmaster" type="text" />
+      </li>
+      <li class="form-row">
+        <label for="startFarming">Start farming mode: </label><input id="startFarming" type="text" />
+      </li>
+      <li class="form-row">
+        <label for="stopFarming">Stop farming mode: </label><input id="stopFarming" type="text" />
+      </li>
+    </ul>
+    <script type="text/javascript" src="../js/options.js"></script>
+  </body>
+</html>

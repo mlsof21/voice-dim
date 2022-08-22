@@ -1,21 +1,19 @@
 import json
 import os
 import os.path
-import re
-import zipfile
 from typing import List
 
 
-def get_files_to_zip():
+def get_files_to_zip(browser: str):
     zippable_files = []
     exclude = [
         r'\.(py|md|zip|ts)',  # file extensions
-        r'\..*ignore|package\.json|package-lock\.json|tsconfig\.json|\.prettierrc\.json|requirements\.txt|webpack.*',  # files
+        # files
+        fr'\..*ignore|package\.json|package-lock\.json|tsconfig\.json|\.prettierrc\.json|requirements\.txt|manifest\.(?:(?!{browser}).)*\.json',
         # directories
         r'(\\|/)(screenshots|test|node_modules|\.github|\.git|env|\.vscode|build)'
     ]
-
-    for root, folders, files in os.walk('.'):
+    for root, folders, files in os.walk(f'./dist'):
         print(root)
         for f in files:
             file = os.path.join(root, f)
@@ -25,7 +23,7 @@ def get_files_to_zip():
 
 
 def zip_files(files: List[str], browser: str):
-    output_folder = 'build'
+    output_folder = f'build'
     if not os.path.isdir(output_folder):
         os.mkdir(output_folder)
 
@@ -43,25 +41,27 @@ def zip_files(files: List[str], browser: str):
     zf = zipfile.ZipFile(output_file, 'w', zipfile.ZIP_STORED)
 
     for f in files:
-        print("Creating for", browser)
-        if f.endswith("manifest.json"):
-            manifest = json.load(open(f))
-            if browser == "firefox":
-                manifest["manifest_version"] = 2
-                del manifest['action']
-                # manifest["permissions"].append("https://www.bungie.net/*")
+        print(f"Creating {f} for", browser)
 
-            zf.writestr(f[2:], json.dumps(manifest, indent=2))
+        print("basename:", basename(f))
+        if f.endswith('js'):
+            zf.write(f[2:], 'js/' + basename(f.replace('./dist', '')))
+        elif f.endswith('css'):
+            zf.write(f[2:], 'css/' + basename(f.replace('./dist', '')))
+        elif f.endswith('html'):
+            zf.write(f[2:], 'html/' + basename(f.replace('./dist', '')))
         else:
-            zf.write(f[2:])
+            zf.write(f[2:],
+                     basename(f.replace('./dist', '').replace(f'{browser}.', '')))
 
     zf.close()
 
 
 if __name__ == "__main__":
     browsers = ["chrome", "firefox"]
-    files_to_zip = get_files_to_zip()
-    print("Files to zip:", files_to_zip)
 
     for browser in browsers:
+        files_to_zip = get_files_to_zip(browser)
+        print("Files to zip:", files_to_zip)
         zip_files(files_to_zip, browser)
+    # shutil.make_archive('build/dim-voice-chrome', 'zip', './dist')

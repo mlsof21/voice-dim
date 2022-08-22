@@ -9,7 +9,7 @@
   "content_scripts": [
     {
       "matches": ["https://*.destinyitemmanager.com/*"],
-      "js": ["js/dim-voice.js", "js/fuse.js"]
+      "js": ["js/dim-voice.js"]
     }
   ],
   "commands": {
@@ -28,5 +28,9 @@
   "icons": {
     "128": "icon.png"
   },
-  "permissions": ["tabs"]
+  "options_ui": {
+    "page": "html/options.html",
+    "open_in_tab": true
+  },
+  "permissions": ["tabs", "storage"]
 }

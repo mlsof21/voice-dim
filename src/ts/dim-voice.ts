@@ -6,6 +6,7 @@ import {
   getDestinyManifestSlice,
 } from 'bungie-api-ts/destiny2';
 import Fuse from 'fuse.js';
+import { retrieve } from './common';
 
 const origConsoleLog = console.log;
 
@@ -43,8 +44,7 @@ const escapeEvent = new KeyboardEvent('keydown', {
   bubbles: true,
   key: 'Escape',
 });
-
-const knownPerks: string[] = [];
+let knownPerks: string[] = [];
 
 function setSearchBar() {
   return document.getElementsByName('filter').length > 0
@@ -70,19 +70,6 @@ function setHtmlElements() {
     searchLink.appendChild(debugButton);
   }
   observer.disconnect();
-}
-
-function setNativeValue(element: HTMLInputElement, value: string) {
-  const valueSetter = Object.getOwnPropertyDescriptor(element, 'value')?.set ?? null;
-  if (!valueSetter) return;
-  const prototype = Object.getPrototypeOf(element);
-  const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set ?? null;
-
-  if (valueSetter && prototypeValueSetter && valueSetter !== prototypeValueSetter) {
-    prototypeValueSetter.call(element, value);
-  } else {
-    valueSetter.call(element, value);
-  }
 }
 
 const weaponTypeQueries = {
@@ -169,25 +156,27 @@ const transferableItemAriaLabels = [
   'Class Armor',
 ];
 
+let mappedCommands: Record<string, string> = {};
+
 const potentialActions: Record<string, (() => void) | ((loadoutName: string) => void)> = {
   transfer: handleItemTypeQuery,
-  'start farming': handleStartFarmingMode,
-  'stop farming': handleStopFarmingMode,
-  'equip max power': handleEquipMaxPower,
-  'equip loadout': handleEquipLoadout,
-  'equip load out': handleEquipLoadout,
-  'collect post master': handleCollectPostmaster,
-  'collect postmaster': handleCollectPostmaster,
+  startFarming: handleStartFarmingMode,
+  stopFarming: handleStopFarmingMode,
+  maxPower: handleEquipMaxPower,
+  loadout: handleEquipLoadout,
+  postmaster: handleCollectPostmaster,
 };
 
 function parseSpeech(this: any, transcript: string) {
   console.log('parsing', transcript);
   let query = transcript.trim();
-  const closestMatch = getClosestMatch(Object.keys(potentialActions), query);
-  console.log({ closestMatch });
+  const closestMatch = getClosestMatch(Object.keys(mappedCommands), query);
+  console.log(mappedCommands[closestMatch]);
+  const closestAction = getClosestMatch(Object.keys(potentialActions), mappedCommands[closestMatch]);
+  console.log({ closestAction });
 
   query = query.replace(closestMatch, '').trim();
-  if (closestMatch !== '') potentialActions[closestMatch].call(this, query);
+  if (closestMatch !== '') potentialActions[closestAction].call(this, query);
 }
 
 function handleItemTypeQuery(query: string) {
@@ -270,7 +259,7 @@ function handleStartFarmingMode() {
   if (currentCharacter) {
     currentCharacter.dispatchEvent(singleClick);
     setTimeout(() => {
-      const farmingSpan = getLoadoutSpanByLoadoutName('Farming');
+      const farmingSpan = document.querySelector('.loadout-menu li span');
       farmingSpan?.dispatchEvent(singleClick);
     }, 500);
   }
@@ -439,14 +428,15 @@ function getVisibleItems(items: NodeListOf<Element> | undefined = undefined): El
   if (!items) items = document.querySelectorAll('div.item');
   const result: Element[] = [];
   items.forEach((x) => {
-    if (parseFloat(window.getComputedStyle(x, null).opacity) > 0.2) result;
+    if (parseFloat(window.getComputedStyle(x, null).opacity) > 0.2) {
+      result.push(x);
+    }
   });
   return result;
 }
 
 function transferByWeaponTypeQuery(searchInput: string) {
   populateSearchBar(searchInput);
-
   const transferFunc = function () {
     const filteredItems = getVisibleItems();
     console.log(filteredItems);
@@ -536,18 +526,41 @@ function stopSpeech() {
   recognizing = false;
 }
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(async function (request, sender) {
   console.log(sender.tab ? 'from a content script:' + sender.tab.url : 'from the extension');
+  console.log({ request });
   if (request.dimShortcutPressed) {
-    sendResponse({ ack: 'Acknowledged.' });
+    // sendResponse({ ack: 'Acknowledged.' });
     if (!recognizing) {
       startSpeech();
     } else {
       stopSpeech();
     }
+    return;
   }
-  return true;
+  if (request === 'shortcut updated') {
+    await getCustomCommands();
+
+    // sendResponse({ ack: 'Acknowledged.' });
+  }
 });
+
+async function getCustomCommands() {
+  const commands = await retrieve('commands');
+  mappedCommands = reverseMapCustomCommands(commands);
+  console.log({ commands, mappedCommands });
+}
+
+function reverseMapCustomCommands(commands: any) {
+  const newCommands: Record<string, string> = {};
+  for (const propName in commands) {
+    const arr: Array<string> = commands[propName];
+    arr.forEach((value) => {
+      newCommands[value] = propName;
+    });
+  }
+  return newCommands;
+}
 
 async function $http(config: HttpClientConfig): Promise<Response> {
   return fetch(config.url, {
@@ -591,19 +604,19 @@ function createMaps(manifest: DestinyManifestSlice<['DestinyInventoryItemDefinit
     'origins',
     'intrinsics',
   ];
+  const foundPerks = [];
 
   for (const hash in manifest.DestinyInventoryItemDefinition) {
     const item = manifest.DestinyInventoryItemDefinition[hash];
-
-    // Only map weapons
+    // Only map perks
     if (item && item.itemType === 19) {
       const plugCategoryIdentifier = item.plug?.plugCategoryIdentifier ?? '';
       if (validPlugs.includes(plugCategoryIdentifier) && item.displayProperties.name !== '') {
-        knownPerks.push(item.displayProperties.name.toLowerCase());
+        foundPerks.push(item.displayProperties.name.toLowerCase());
       }
     }
   }
-  knownPerks.push(...new Set(knownPerks.sort()));
+  knownPerks = [...new Set(foundPerks.sort())];
   console.log({ knownPerks });
 }
 
@@ -616,7 +629,7 @@ let observer = new MutationObserver((mutations) => {
     for (let i = 0; i < mutation.addedNodes.length; i++) {
       const node = <Element>mutation.addedNodes[i];
       if (node.className && node.className.toLowerCase() == 'search-link') {
-        // setHtmlElements();
+        getCustomCommands();
         break;
       }
     }
