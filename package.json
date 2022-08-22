@@ -1,13 +1,13 @@
 {
   "name": "dim-voice",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Perform common DIM actions by using speech recognition.",
   "main": "dist/js/dim-voice.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "zip": "npm run build && python scripts/build.py",
     "build": "webpack --env browser=chrome --config webpack/webpack.prod.js",
-    "watch": "webpack --env=x=chrome --config webpack/webpack.dev.js --progress --watch"
+    "watch": "npx webpack --env mode=development --config webpack/webpack.dev.js --progress --watch"
   },
   "repository": {
     "type": "git",

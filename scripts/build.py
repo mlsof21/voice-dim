@@ -52,7 +52,7 @@ def zip_files(files: List[str], browser: str):
             zf.write(f[2:], 'html/' + basename(f.replace('./dist', '')))
         else:
             zf.write(f[2:],
-                     basename(f.replace('./dist', '').replace(f'{browser}.', '')))
+                     basename(f.replace('./dist', '').replace(f'{browser}', '')))
 
     zf.close()
 
@@ -61,7 +61,10 @@ if __name__ == "__main__":
     browsers = ["chrome", "firefox"]
 
     for browser in browsers:
-        files_to_zip = get_files_to_zip(browser)
-        print("Files to zip:", files_to_zip)
-        zip_files(files_to_zip, browser)
-    # shutil.make_archive('build/dim-voice-chrome', 'zip', './dist')
+        # files_to_zip = get_files_to_zip(browser)
+        # print("Files to zip:", files_to_zip)
+        # zip_files(files_to_zip, browser)
+        manifest = json.load(open(f'./dist/{browser}/manifest.json'))
+        version = manifest['version']
+        shutil.make_archive(
+            f'build/dim-voice-{browser}.{version}', 'zip', f'./dist/{browser}')
