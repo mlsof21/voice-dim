@@ -1,5 +1,7 @@
 .vscode/
 
+.DS_Store
+
 # ts folders
 node_modules/
 

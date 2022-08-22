@@ -1,11 +1,11 @@
 {
   "name": "dim-voice",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Perform common DIM actions by using speech recognition.",
-  "main": "dim-voice.js",
+  "main": "src/js/dim-voice.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "zip": "py build.py",
+    "zip": "python scripts/build.py",
     "build": "webpack --config webpack.config.js"
   },
   "repository": {
@@ -13,7 +13,8 @@
     "url": "git+https://github.com/mlsof21/dim-voice.git"
   },
   "keywords": [
-    "DIM",
+    "Voice DIM",
+    "DIM Voice",
     "Destiny",
     "2",
     "speech",
