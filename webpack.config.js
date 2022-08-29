@@ -1,13 +1,13 @@
 const path = require('path');
+const dotenv = require('dotenv-webpack');
 const CopyPlugin = require('copy-webpack-plugin');
 const { CleanPlugin } = require('webpack');
-const srcDir = path.join(__dirname, '..', 'src', 'ts');
+const srcDir = path.join(__dirname, 'src', 'ts');
 
 const browsers = ['chrome', 'firefox'];
 
 const configs = browsers.map((browser) => {
   return {
-    mode: 'development',
     entry: {
       background: path.join(srcDir, 'background.ts'),
       'dim-voice': path.join(srcDir, 'dim-voice.ts'),
@@ -15,7 +15,7 @@ const configs = browsers.map((browser) => {
       common: path.join(srcDir, 'common.ts'),
     },
     output: {
-      path: path.join(__dirname, '..', 'dist', browser, 'js'),
+      path: path.join(__dirname, 'dist', browser, 'js'),
       filename: '[name].js',
       clean: true,
     },
@@ -41,15 +41,15 @@ const configs = browsers.map((browser) => {
           { from: 'css/', to: '../css/', context: 'src' },
         ],
       }),
+      new dotenv(),
     ],
     devtool: 'inline-source-map',
   };
 });
 
 module.exports = (env) => {
+  console.log({ configs });
   return configs.map((config) => {
-    const newConfig = { ...config, mode: env.mode };
-    console.log({ newConfig });
-    return newConfig;
+    return { ...config, mode: env.mode };
   });
 };

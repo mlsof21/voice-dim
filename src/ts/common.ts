@@ -1,3 +1,30 @@
+export type Action = {
+  func: () => void;
+  timeout: number;
+};
+
+export const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(func: F, waitFor: number = 300) => {
+  let timeout: NodeJS.Timeout;
+
+  const debounced = (...args: Parameters<F>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), waitFor);
+  };
+
+  return debounced;
+};
+
+export const DEFAULT_COMMANDS: Record<string, string[]> = {
+  transfer: ['transfer'],
+  equip: ['equip'],
+  store: ['store'],
+  loadout: ['loadout'],
+  maxPower: ['max power'],
+  postmaster: ['collect postmaster'],
+  startFarming: ['start farming mode'],
+  stopFarming: ['stop farming mode'],
+};
+
 export function store(key: string, value: any) {
   console.log('storing', key, value);
 
@@ -5,15 +32,6 @@ export function store(key: string, value: any) {
     console.log('Stored', key, value);
   });
 }
-
-export const DEFAULT_COMMANDS: Record<string, string[]> = {
-  transfer: ['transfer'],
-  loadout: ['equip loadout'],
-  maxPower: ['equip max power'],
-  postmaster: ['collect postmaster'],
-  startFarming: ['start farming mode'],
-  stopFarming: ['stop farming mode'],
-};
 
 export function retrieve(key: string): Promise<any> {
   return new Promise((resolve, reject) => {

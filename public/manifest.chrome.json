@@ -32,5 +32,6 @@
     "page": "html/options.html",
     "open_in_tab": true
   },
+  "host_permissions": ["https://www.bungie.net/*"],
   "permissions": ["tabs", "storage"]
 }

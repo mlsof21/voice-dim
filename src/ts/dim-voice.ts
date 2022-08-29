@@ -6,7 +6,7 @@ import {
   getDestinyManifestSlice,
 } from 'bungie-api-ts/destiny2';
 import Fuse from 'fuse.js';
-import { retrieve } from './common';
+import { Action, retrieve } from './common';
 
 const origConsoleLog = console.log;
 
@@ -40,6 +40,14 @@ const enterEvent = new KeyboardEvent('keydown', {
   key: 'Enter',
 });
 
+const letterEvent = (letter: string) =>
+  new KeyboardEvent('keypress', {
+    bubbles: true,
+    key: letter,
+    cancelable: true,
+    view: window,
+  });
+
 const escapeEvent = new KeyboardEvent('keydown', {
   bubbles: true,
   key: 'Escape',
@@ -50,26 +58,6 @@ function setSearchBar() {
   return document.getElementsByName('filter').length > 0
     ? <HTMLInputElement>document.getElementsByName('filter')[0]
     : null;
-}
-
-function setHtmlElements() {
-  if (!searchBar) searchBar = setSearchBar();
-  if (debugging) {
-    const searchLink = document.getElementsByClassName('search-link')[0];
-    const debugBar = document.createElement('input');
-    debugBar.type = 'text';
-    debugBar.id = 'debugInput';
-    searchLink.appendChild(debugBar);
-    const debugButton = document.createElement('button');
-    debugButton.id = 'debugButton';
-    debugButton.innerText = 'submit';
-    debugButton.onclick = () => {
-      const value = (<HTMLInputElement>document.getElementById('debugInput')).value;
-      parseSpeech(value);
-    };
-    searchLink.appendChild(debugButton);
-  }
-  observer.disconnect();
 }
 
 const weaponTypeQueries = {
@@ -160,6 +148,8 @@ let mappedCommands: Record<string, string> = {};
 
 const potentialActions: Record<string, (() => void) | ((loadoutName: string) => void)> = {
   transfer: handleItemTypeQuery,
+  equip: handleEquipItem,
+  store: handleStoreItem,
   startFarming: handleStartFarmingMode,
   stopFarming: handleStopFarmingMode,
   maxPower: handleEquipMaxPower,
@@ -171,7 +161,6 @@ function parseSpeech(this: any, transcript: string) {
   console.log('parsing', transcript);
   let query = transcript.trim();
   const closestMatch = getClosestMatch(Object.keys(mappedCommands), query);
-  console.log(mappedCommands[closestMatch]);
   const closestAction = getClosestMatch(Object.keys(potentialActions), mappedCommands[closestMatch]);
   console.log({ closestAction });
 
@@ -179,6 +168,55 @@ function parseSpeech(this: any, transcript: string) {
   if (closestMatch !== '') potentialActions[closestAction].call(this, query);
 }
 
+function handleStoreItem(query: string) {
+  populateSearchBar('is:incurrentchar');
+  setTimeout(() => {
+    const availableItems = getAllTransferableItems();
+    const itemToStore = getClosestMatch(Object.keys(availableItems), query);
+    const itemDiv = availableItems[itemToStore];
+    if (itemDiv) {
+      itemDiv.dispatchEvent(singleClick);
+      setTimeout(() => {
+        const vaultDiv = document.querySelector('.item-popup [title^="Vault"]');
+        vaultDiv?.dispatchEvent(singleClick);
+        searchBar?.dispatchEvent(escapeEvent);
+      }, 500);
+    }
+  }, 2000);
+}
+
+function handleEquipItem(query: string) {
+  populateSearchBar('-is:incurrentchar');
+  setTimeout(() => {
+    const availableItems = getAllTransferableItems();
+    const itemToStore = getClosestMatch(Object.keys(availableItems), query);
+    const itemDiv = availableItems[itemToStore];
+    itemDiv?.dispatchEvent(singleClick);
+    setTimeout(storeWeaponOnCurrentCharacter, 500);
+  }, 2000);
+}
+
+function storeWeaponOnCurrentCharacter() {
+  const currentClass = getCurrentCharacterClass();
+  const storeDiv = document.querySelector(`[title^="Store"] [data-icon*="${currentClass}"]`);
+  storeDiv?.dispatchEvent(singleClick);
+  searchBar?.dispatchEvent(escapeEvent);
+}
+
+function getCurrentCharacterClass(): string {
+  const currentCharacter = document.querySelector('.character.current');
+  if (currentCharacter?.innerHTML.includes('Titan')) {
+    return 'Titan';
+  }
+  if (currentCharacter?.innerHTML.includes('Hunter')) {
+    return 'Hunter';
+  }
+  if (currentCharacter?.innerHTML.includes('Warlock')) {
+    return 'Warlock';
+  }
+
+  return '';
+}
 function handleItemTypeQuery(query: string) {
   query = query.replace('transfer', '');
   console.log('In handleItemTypeQuery, handling', query);
@@ -187,6 +225,7 @@ function handleItemTypeQuery(query: string) {
 
   const withQuery = getWithQuery(query);
 
+  // likely means we're looking for a specific weapon
   if (fullQuery === '') {
     console.log('looking for', query);
     let timeout = 100;
@@ -194,15 +233,7 @@ function handleItemTypeQuery(query: string) {
       populateSearchBar(withQuery);
       timeout = 2000;
     }
-    setTimeout(() => {
-      const availableItems = getAllTransferableItems();
-      const itemToGet = getClosestMatch(Object.keys(availableItems), query);
-      const itemDiv = availableItems[itemToGet];
-
-      if (itemDiv) {
-        itemDiv.dispatchEvent(dblClick);
-      }
-    }, timeout);
+    setTimeout(() => equipItemOnCurrentCharacter(query), timeout);
   } else {
     if (withQuery !== '') {
       fullQuery += ` ${withQuery}`;
@@ -212,6 +243,19 @@ function handleItemTypeQuery(query: string) {
     console.log('Full query being sent to DIM: ' + fullQuery);
     transferByWeaponTypeQuery(fullQuery);
   }
+}
+
+function equipItemOnCurrentCharacter(query: string) {
+  const availableItems = getAllTransferableItems();
+  const itemToGet = getClosestMatch(Object.keys(availableItems), query);
+  populateSearchBar(`name:"${itemToGet}"`);
+  setTimeout(() => {
+    const visibleItems = getVisibleItems();
+    console.log({ visibleItems });
+    visibleItems[0]?.dispatchEvent(dblClick);
+    clearSearchBar();
+  }, 2000);
+  // const itemDiv = availableItems[itemToGet];
 }
 
 function getFullQuery(query: string) {
@@ -243,8 +287,8 @@ function getWithQuery(query: string) {
     const splitPerkNames = perkNamesToSearch.split(' and ').map((x) => {
       return x.trim();
     });
-    let perkNames = [];
-    for (let perkName of splitPerkNames) {
+    const perkNames = [];
+    for (const perkName of splitPerkNames) {
       const closestPerk = getClosestMatch(knownPerks, perkName);
       perkNames.push(`perkname:"${closestPerk}"`);
     }
@@ -256,41 +300,40 @@ function getWithQuery(query: string) {
 function handleStartFarmingMode() {
   console.log('Starting farming mode');
   const currentCharacter = document.querySelector('.character.current');
-  if (currentCharacter) {
-    currentCharacter.dispatchEvent(singleClick);
-    setTimeout(() => {
-      const farmingSpan = document.querySelector('.loadout-menu li span');
-      farmingSpan?.dispatchEvent(singleClick);
-    }, 500);
-  }
+
+  const currentCharacterClick = () => currentCharacter?.dispatchEvent(singleClick);
+  const farmingClick = () => {
+    const farmingSpan = document.querySelector('.loadout-menu ul li span');
+    farmingSpan?.dispatchEvent(singleClick);
+  };
+
+  const actions = [
+    { func: currentCharacterClick, timeout: 500 },
+    { func: farmingClick, timeout: 0 },
+  ];
+
+  performUiInteractions(actions);
 }
 
 function handleStopFarmingMode() {
   const stopButton = document.querySelector('#item-farming button');
-  if (stopButton) {
-    stopButton.dispatchEvent(singleClick);
-  }
+  stopButton?.dispatchEvent(singleClick);
 }
 
 function handleEquipMaxPower() {
   const currentCharacter = document.querySelector('.character.current');
-  if (currentCharacter) {
-    currentCharacter.dispatchEvent(singleClick);
-    setTimeout(() => {
-      const maxPowerSpan = getLoadoutSpanByLoadoutName('Max Power');
-      maxPowerSpan?.dispatchEvent(singleClick);
-    }, 500);
-  }
-}
+  const currentCharacterClick = () => currentCharacter?.dispatchEvent(singleClick);
+  const maxPowerClick = () => {
+    const maxPowerSpan = document.querySelector('span[class^=MaxlightButton]');
+    maxPowerSpan?.dispatchEvent(singleClick);
+  };
 
-function getLoadoutSpanByLoadoutName(loadoutName: string): Element | null {
-  const loadoutMenuSpans = document.querySelectorAll('.loadout-menu span');
-  loadoutMenuSpans.forEach((span) => {
-    if (span.textContent?.includes(loadoutName)) {
-      return span;
-    }
-  });
-  return null;
+  const actions = [
+    { func: currentCharacterClick, timeout: 500 },
+    { func: maxPowerClick, timeout: 0 },
+  ];
+
+  performUiInteractions(actions);
 }
 
 function handleEquipLoadout(loadoutName: string) {
@@ -298,16 +341,22 @@ function handleEquipLoadout(loadoutName: string) {
   if (loadoutName.includes('equip loadout') || loadoutName.includes('equip load out'))
     loadoutName = loadoutName.replace('equip loadout', '').replace('equip load out', '');
   const currentCharacter = document.querySelector('.character.current');
-  if (currentCharacter) currentCharacter.dispatchEvent(singleClick);
-  setTimeout(() => {
+  const characterClick = () => currentCharacter?.dispatchEvent(singleClick);
+
+  const loadoutClick = () => {
     const availableLoadoutNames = getLoadoutNames();
     const loadoutResult = getClosestMatch(availableLoadoutNames, loadoutName);
     const loadoutToEquip = loadoutResult;
     const loadoutToEquipSpan = document.querySelector(`.loadout-menu span[title="${loadoutToEquip}"]`);
-    if (loadoutToEquipSpan) {
-      loadoutToEquipSpan.dispatchEvent(singleClick);
-    }
-  }, 500);
+    loadoutToEquipSpan?.dispatchEvent(singleClick);
+  };
+
+  const actions = [
+    { func: characterClick, timeout: 500 },
+    { func: loadoutClick, timeout: 0 },
+  ];
+
+  performUiInteractions(actions);
 }
 
 function getLoadoutNames(): string[] {
@@ -321,10 +370,16 @@ function getLoadoutNames(): string[] {
 
 function handleCollectPostmaster() {
   const postmasterButton = document.querySelector('[class^="PullFromPostmaster"]');
-  if (postmasterButton) {
-    postmasterButton.dispatchEvent(singleClick);
-    setTimeout(() => postmasterButton.dispatchEvent(singleClick), 500);
-  }
+
+  const postmasterClick = () => {
+    postmasterButton?.dispatchEvent(singleClick);
+  };
+
+  const actions: Action[] = [
+    { func: postmasterClick, timeout: 500 },
+    { func: postmasterClick, timeout: 0 },
+  ];
+  performUiInteractions(actions);
 }
 
 function checkForGenericTerms(queries: Record<string, string>, query: string) {
@@ -367,7 +422,7 @@ function getClosestMatch(availableItems: string[], query: string): string {
   const result = fuse.search(query);
   console.log({ result, query });
 
-  if (result.length > 0) {
+  if (result.length > 0 && typeof result[0].score !== 'undefined' && result[0].score < 0.5) {
     return result[0].item;
   }
 
@@ -388,18 +443,16 @@ function populateSearchBar(searchInput: string) {
   if (!searchBar) searchBar = <HTMLInputElement>document.getElementsByName('filter')[0];
   if (searchBar) {
     searchBar.value = searchInput;
-    const inputFunc = function () {
+    const inputFunc = () => {
       searchBar?.dispatchEvent(inputEvent);
     };
 
-    const enterFunc = function () {
+    const enterFunc = () => {
       searchBar?.focus();
-      setTimeout(() => {}, 500);
       searchBar?.dispatchEvent(enterEvent);
     };
-    const escapeFunc = function () {
+    const escapeFunc = () => {
       searchBar?.focus();
-      setTimeout(() => {}, 500);
       searchBar?.dispatchEvent(escapeEvent);
     };
     const actions = [
@@ -407,16 +460,24 @@ function populateSearchBar(searchInput: string) {
       { func: enterFunc, timeout: 1000 },
       { func: escapeFunc, timeout: 1000 },
     ];
-    performUiInteraction(actions);
+    performUiInteractions(actions);
   }
 }
 
-type Action = {
-  func: () => void;
-  timeout: number;
-};
+function clearSearchBar() {
+  console.log('Clearing search bar');
+  if (!searchBar) searchBar = <HTMLInputElement>document.getElementsByName('filter')[0];
+  if (searchBar) {
+    searchBar.value = '';
+    const escapeFunc = () => {
+      searchBar?.focus();
+      searchBar?.dispatchEvent(escapeEvent);
+    };
+    performUiInteractions([{ func: escapeFunc, timeout: 100 }]);
+  }
+}
 
-function performUiInteraction(actions: Action[]) {
+function performUiInteractions(actions: Action[]) {
   let totalTimeout = 0;
   for (let i = 0; i < actions.length; i++) {
     totalTimeout += actions[i].timeout;
@@ -446,7 +507,6 @@ function transferByWeaponTypeQuery(searchInput: string) {
   };
   const escapeFunc = function () {
     searchBar?.focus();
-    setTimeout(() => {}, 500);
     searchBar?.dispatchEvent(escapeEvent);
   };
   const actions = [
@@ -454,15 +514,13 @@ function transferByWeaponTypeQuery(searchInput: string) {
     { func: escapeFunc, timeout: 1000 },
   ];
 
-  performUiInteraction(actions);
+  performUiInteractions(actions);
 }
 
 const dimWords = ['dim', 'damn', 'then', 'them'];
-const debugging = true;
 
 const { webkitSpeechRecognition } = window as any;
 
-// navigator.mediaDevices.getUserMedia({audio: true})
 var SpeechRecognition = window.SpeechRecognition || webkitSpeechRecognition;
 
 // initialize our SpeechRecognition object
@@ -473,12 +531,12 @@ recognition.interimResults = false;
 recognition.continuous = false;
 let recognizing = false;
 
-recognition.onerror = (e) => {
+recognition.onerror = (e: any) => {
   console.error('Error with speech recognition:', e);
   stopSpeech();
 };
 
-recognition.onresult = (e) => {
+recognition.onresult = (e: any) => {
   var transcript = e.results[0][0].transcript.toLowerCase();
   console.log({ transcript });
   if (dimWords.some((word) => transcript.startsWith(word))) {
@@ -526,11 +584,11 @@ function stopSpeech() {
   recognizing = false;
 }
 
-chrome.runtime.onMessage.addListener(async function (request, sender) {
+chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
   console.log(sender.tab ? 'from a content script:' + sender.tab.url : 'from the extension');
   console.log({ request });
   if (request.dimShortcutPressed) {
-    // sendResponse({ ack: 'Acknowledged.' });
+    sendResponse({ ack: 'Acknowledged.' });
     if (!recognizing) {
       startSpeech();
     } else {
@@ -642,3 +700,9 @@ observer.observe(document.body, {
   attributes: false,
   characterData: false,
 });
+
+// init();
+
+// const client = new WebSocket('wss://localhost:10555');
+
+// client.send('test');

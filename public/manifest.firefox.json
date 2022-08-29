@@ -31,5 +31,11 @@
     "page": "html/options.html",
     "open_in_tab": true
   },
-  "permissions": ["tabs", "storage"]
+  "permissions": [
+    "tabs",
+    "storage",
+    "https://www.bungie.net/Platform/Destiny2/Manifest",
+    "https://www.bungie.net/common/**",
+    "https://api.speechly.com/**"
+  ]
 }

@@ -1,6 +1,7 @@
 .vscode/
 
 .DS_Store
+.env
 
 # ts folders
 node_modules/
@@ -9,3 +10,4 @@ dist/
 # python folders
 build/
 env/
+
