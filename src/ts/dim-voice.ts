@@ -27,7 +27,7 @@ const uiEvents = {
     cancelable: true,
     view: window,
   }),
-  dblClick: new MouseEvent('uiEvents.dblclick', {
+  dblClick: new MouseEvent('dblclick', {
     bubbles: true,
     cancelable: true,
     view: window,
@@ -131,6 +131,8 @@ const armorTypeQueries = {
 const otherQueries = {
   crafted: 'is:crafted',
   deepsight: 'is:deepsight',
+  'deep sight': 'is:deepsight',
+  'deep site': 'is:deepsight',
   wishlist: 'is:wishlist',
   wishlisted: 'is:wishlist',
 };
@@ -178,7 +180,10 @@ export function parseSpeech(this: any, transcript: string) {
   console.log({ closestAction });
 
   query = query.replace(closestMatch, '').trim();
-  if (closestMatch !== '') potentialActions[closestAction].call(this, query, closestAction);
+  if (closestMatch !== '') {
+    potentialActions[closestAction].call(this, query, closestAction);
+  }
+  clearSearchBar();
 }
 
 function handleStoreItem(query: string) {
@@ -211,7 +216,7 @@ function storeWeapon() {
   const currentClass = getCurrentCharacterClass();
   const storeDiv = document.querySelector(`[title^="Store"] [data-icon*="${currentClass}"]`);
   storeDiv?.dispatchEvent(uiEvents.singleClick);
-  searchBar?.dispatchEvent(uiEvents.escape);
+  clearSearchBar();
 }
 
 function getCurrentCharacterClass(): string {
@@ -263,9 +268,7 @@ function equipItemOnCurrentCharacter(query: string) {
     const visibleItems = getVisibleItems();
     console.log({ visibleItems });
     visibleItems[0]?.dispatchEvent(uiEvents.dblClick);
-    clearSearchBar();
   }, 2000);
-  // const itemDiv = availableItems[itemToGet];
 }
 
 function getGenericQuery(query: string) {
@@ -309,18 +312,13 @@ function getPerkQuery(query: string) {
 
 function handleStartFarmingMode() {
   console.log('Starting farming mode');
-  const currentCharacter = document.querySelector('.character.current');
-
-  const currentCharacterClick = () => currentCharacter?.dispatchEvent(uiEvents.singleClick);
+  openCurrentCharacterLoadoutMenu();
   const farmingClick = () => {
     const farmingSpan = document.querySelector('.loadout-menu ul li span');
     farmingSpan?.dispatchEvent(uiEvents.singleClick);
   };
 
-  const actions = [
-    { func: currentCharacterClick, timeout: 500 },
-    { func: farmingClick, timeout: 0 },
-  ];
+  const actions = [{ func: farmingClick, timeout: 0 }];
 
   performUiInteractions(actions);
 }
@@ -331,28 +329,28 @@ function handleStopFarmingMode() {
 }
 
 function handleEquipMaxPower() {
-  const currentCharacter = document.querySelector('.character.current');
-  const currentCharacterClick = () => currentCharacter?.dispatchEvent(uiEvents.singleClick);
+  openCurrentCharacterLoadoutMenu();
   const maxPowerClick = () => {
     const maxPowerSpan = document.querySelector('span[class^=MaxlightButton]');
     maxPowerSpan?.dispatchEvent(uiEvents.singleClick);
   };
 
-  const actions = [
-    { func: currentCharacterClick, timeout: 500 },
-    { func: maxPowerClick, timeout: 0 },
-  ];
+  const actions = [{ func: maxPowerClick, timeout: 0 }];
 
   performUiInteractions(actions);
+}
+
+function openCurrentCharacterLoadoutMenu() {
+  const currentCharacter = document.querySelector('.character.current');
+  currentCharacter?.dispatchEvent(uiEvents.singleClick);
 }
 
 function handleEquipLoadout(loadoutName: string) {
   console.log('Equipping loadout', loadoutName);
   if (loadoutName.includes('equip loadout') || loadoutName.includes('equip load out'))
     loadoutName = loadoutName.replace('equip loadout', '').replace('equip load out', '');
-  const currentCharacter = document.querySelector('.character.current');
-  const characterClick = () => currentCharacter?.dispatchEvent(uiEvents.singleClick);
 
+  openCurrentCharacterLoadoutMenu();
   const loadoutClick = () => {
     const availableLoadoutNames = getLoadoutNames();
     const loadoutResult = getClosestMatch(availableLoadoutNames, loadoutName);
@@ -361,10 +359,7 @@ function handleEquipLoadout(loadoutName: string) {
     loadoutToEquipSpan?.dispatchEvent(uiEvents.singleClick);
   };
 
-  const actions = [
-    { func: characterClick, timeout: 500 },
-    { func: loadoutClick, timeout: 0 },
-  ];
+  const actions = [{ func: loadoutClick, timeout: 0 }];
 
   performUiInteractions(actions);
 }
@@ -488,6 +483,7 @@ function clearSearchBar() {
     const escapeFunc = () => {
       searchBar?.focus();
       searchBar?.dispatchEvent(uiEvents.escape);
+      searchBar?.blur();
     };
     performUiInteractions([{ func: escapeFunc, timeout: 100 }]);
   }

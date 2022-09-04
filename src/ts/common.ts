@@ -3,6 +3,13 @@ export type Action = {
   timeout: number;
 };
 
+export function sleep(sleepTimeInMs: number) {
+  var start = new Date().getTime(),
+    expire = start + sleepTimeInMs;
+  while (new Date().getTime() < expire) {}
+  return;
+}
+
 export const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(func: F, waitFor: number = 300) => {
   let timeout: NodeJS.Timeout;
 
