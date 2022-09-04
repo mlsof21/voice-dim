@@ -7,6 +7,7 @@ import {
 } from 'bungie-api-ts/destiny2';
 import Fuse from 'fuse.js';
 import { Action, retrieve } from './common';
+import { SpeechService } from './speech';
 
 const origConsoleLog = console.log;
 
@@ -19,9 +20,7 @@ console.log = function () {
   origConsoleLog.apply(console, args);
 };
 
-// get html elements
-let searchBar = setSearchBar();
-
+// Keyboard and Mouse Events
 const singleClick = new MouseEvent('click', {
   bubbles: true,
   cancelable: true,
@@ -52,14 +51,12 @@ const escapeEvent = new KeyboardEvent('keydown', {
   bubbles: true,
   key: 'Escape',
 });
+
+// Globals
 let knownPerks: string[] = [];
+let searchBar = setSearchBar();
 
-function setSearchBar() {
-  return document.getElementsByName('filter').length > 0
-    ? <HTMLInputElement>document.getElementsByName('filter')[0]
-    : null;
-}
-
+// Queries for the search bar
 const weaponTypeQueries = {
   weapon: 'is:weapon',
   'auto rifle': 'is:weapon is:autorifle',
@@ -72,15 +69,19 @@ const weaponTypeQueries = {
   'scout rifle': 'is:weapon is:scoutrifle',
   scout: 'is:weapon is:scoutrifle',
   sidearm: 'is:weapon is:sidearm',
+  smg: 'is:weapon is:submachine',
   'submachine gun': 'is:weapon is:submachine',
   bow: 'is:weapon is:bow',
   'slug shotgun': 'is:weapon is:shotgun perkname:"pinpoint slug frame"',
   'pellet shotgun': 'is:weapon is:shotgun -perkname:"pinpoint slug frame"',
   shotgun: 'is:weapon is:shotgun',
+  shotty: 'is:weapon is:shotgun',
+  shottie: 'is:weapon is:shotgun',
   'sniper rifle': 'is:weapon is:sniperrifle',
   sniper: 'is:weapon is:sniperrifle',
   'linear fusion rifle': 'is:weapon is:linearfusionrifle',
   'linear fusion': 'is:weapon is:linearfusionrifle',
+  linear: 'is:weapon is:linearfusionrifle',
   'fusion rifle': 'is:weapon is:fusionrifle',
   fusion: 'is:weapon is:fusionrifle',
   'trace rifle': 'is:weapon is:tracerifle',
@@ -90,10 +91,6 @@ const weaponTypeQueries = {
   'machine gun': 'is:weapon is:machinegun',
   sword: 'is:weapon is:sword',
   glaive: 'is:weapon is:glaive',
-};
-
-const craftedQuery = {
-  crafted: 'is:crafted',
 };
 
 const energyTypeQueries = {
@@ -133,6 +130,19 @@ const armorTypeQueries = {
   leg: 'is:armor is:leg',
 };
 
+const otherQueries = {
+  crafted: 'is:crafted',
+  deepsight: 'is:deepsight',
+  wishlist: 'is:wishlist',
+  wishlisted: 'is:wishlist',
+};
+
+function setSearchBar() {
+  return document.getElementsByName('filter').length > 0
+    ? <HTMLInputElement>document.getElementsByName('filter')[0]
+    : null;
+}
+
 const transferableItemAriaLabels = [
   'Kinetic Weapons',
   'Energy Weapons',
@@ -146,10 +156,15 @@ const transferableItemAriaLabels = [
 
 let mappedCommands: Record<string, string> = {};
 
-const potentialActions: Record<string, (() => void) | ((loadoutName: string) => void)> = {
-  transfer: handleItemTypeQuery,
-  equip: handleEquipItem,
-  store: handleStoreItem,
+type ActionFunction = Record<
+  string,
+  (() => void) | ((loadoutName: string) => void) | ((query: string, action: string) => void)
+>;
+
+const potentialActions: ActionFunction = {
+  transfer: handleItemMovement,
+  equip: handleItemMovement,
+  store: handleItemMovement,
   startFarming: handleStartFarmingMode,
   stopFarming: handleStopFarmingMode,
   maxPower: handleEquipMaxPower,
@@ -157,7 +172,7 @@ const potentialActions: Record<string, (() => void) | ((loadoutName: string) => 
   postmaster: handleCollectPostmaster,
 };
 
-function parseSpeech(this: any, transcript: string) {
+export function parseSpeech(this: any, transcript: string) {
   console.log('parsing', transcript);
   let query = transcript.trim();
   const closestMatch = getClosestMatch(Object.keys(mappedCommands), query);
@@ -165,7 +180,7 @@ function parseSpeech(this: any, transcript: string) {
   console.log({ closestAction });
 
   query = query.replace(closestMatch, '').trim();
-  if (closestMatch !== '') potentialActions[closestAction].call(this, query);
+  if (closestMatch !== '') potentialActions[closestAction].call(this, query, closestAction);
 }
 
 function handleStoreItem(query: string) {
@@ -174,14 +189,12 @@ function handleStoreItem(query: string) {
     const availableItems = getAllTransferableItems();
     const itemToStore = getClosestMatch(Object.keys(availableItems), query);
     const itemDiv = availableItems[itemToStore];
-    if (itemDiv) {
-      itemDiv.dispatchEvent(singleClick);
-      setTimeout(() => {
-        const vaultDiv = document.querySelector('.item-popup [title^="Vault"]');
-        vaultDiv?.dispatchEvent(singleClick);
-        searchBar?.dispatchEvent(escapeEvent);
-      }, 500);
-    }
+    itemDiv?.dispatchEvent(singleClick);
+    setTimeout(() => {
+      const vaultDiv = document.querySelector('.item-popup [title^="Vault"]');
+      vaultDiv?.dispatchEvent(singleClick);
+      searchBar?.dispatchEvent(escapeEvent);
+    }, 500);
   }, 2000);
 }
 
@@ -192,11 +205,11 @@ function handleEquipItem(query: string) {
     const itemToStore = getClosestMatch(Object.keys(availableItems), query);
     const itemDiv = availableItems[itemToStore];
     itemDiv?.dispatchEvent(singleClick);
-    setTimeout(storeWeaponOnCurrentCharacter, 500);
+    setTimeout(storeWeapon, 500);
   }, 2000);
 }
 
-function storeWeaponOnCurrentCharacter() {
+function storeWeapon() {
   const currentClass = getCurrentCharacterClass();
   const storeDiv = document.querySelector(`[title^="Store"] [data-icon*="${currentClass}"]`);
   storeDiv?.dispatchEvent(singleClick);
@@ -217,13 +230,14 @@ function getCurrentCharacterClass(): string {
 
   return '';
 }
-function handleItemTypeQuery(query: string) {
+function handleItemMovement(query: string, action: string) {
+  console.log('in handleItemMovement', { action });
   query = query.replace('transfer', '');
   console.log('In handleItemTypeQuery, handling', query);
 
-  let fullQuery = getFullQuery(query);
+  let fullQuery = getGenericQuery(query);
 
-  const withQuery = getWithQuery(query);
+  const withQuery = getPerkQuery(query);
 
   // likely means we're looking for a specific weapon
   if (fullQuery === '') {
@@ -258,17 +272,17 @@ function equipItemOnCurrentCharacter(query: string) {
   // const itemDiv = availableItems[itemToGet];
 }
 
-function getFullQuery(query: string) {
+function getGenericQuery(query: string) {
   let fullQuery = '';
   query = query.split('with ')[0];
   const genericQueries = [
     rarityQueries,
-    craftedQuery,
     weaponTypeQueries,
     energyTypeQueries,
     weaponSlotQueries,
     armorTypeQueries,
     ammoTypeQueries,
+    otherQueries,
   ];
 
   for (const genericQuery of genericQueries) {
@@ -277,7 +291,7 @@ function getFullQuery(query: string) {
   return fullQuery.trim();
 }
 
-function getWithQuery(query: string) {
+function getPerkQuery(query: string) {
   let withQuery = '';
   let perkNamesToSearch = '';
   if (query.includes(' with ')) {
@@ -419,6 +433,12 @@ function getClosestMatch(availableItems: string[], query: string): string {
 
   const fuse = new Fuse(availableItems, options);
 
+  // const soundsLike = [];
+  // for (const item of availableItems) {
+  //   soundsLike.push({ word: item, query, score: natural.Metaphone.compare(item, query) });
+  // }
+  // console.log({ soundsLike });
+
   const result = fuse.search(query);
   console.log({ result, query });
 
@@ -517,82 +537,15 @@ function transferByWeaponTypeQuery(searchInput: string) {
   performUiInteractions(actions);
 }
 
-const dimWords = ['dim', 'damn', 'then', 'them'];
-
-const { webkitSpeechRecognition } = window as any;
-
-var SpeechRecognition = window.SpeechRecognition || webkitSpeechRecognition;
-
-// initialize our SpeechRecognition object
-var recognition = new SpeechRecognition();
-recognition.lang = 'en-US';
-recognition.interimResults = false;
-// recognition.maxAlternatives = 1;
-recognition.continuous = false;
-let recognizing = false;
-
-recognition.onerror = (e: any) => {
-  console.error('Error with speech recognition:', e);
-  stopSpeech();
-};
-
-recognition.onresult = (e: any) => {
-  var transcript = e.results[0][0].transcript.toLowerCase();
-  console.log({ transcript });
-  if (dimWords.some((word) => transcript.startsWith(word))) {
-    parseSpeech(removeMagicWord(transcript));
-    stopSpeech();
-  } else {
-    console.log('no magic word, understood ', transcript);
-    parseSpeech(transcript.toLowerCase());
-    stopSpeech();
-  }
-};
-
-// called when we detect silence
-recognition.onspeechend = () => {
-  if (recognizing) {
-    stopSpeech();
-  }
-};
-
-function removeMagicWord(transcript: string) {
-  for (const word of dimWords) {
-    console.log('checking transcript for', word);
-    if (transcript.startsWith(word)) {
-      transcript = transcript.replace(word, '');
-      break;
-    }
-  }
-  console.log('returning transcript:', transcript);
-  return transcript;
-}
-
-// called when we detect sound
-function startSpeech() {
-  recognizing = true;
-  try {
-    // calling it twice will throw...
-    console.log('starting speech recognition');
-    recognition.start();
-  } catch (e) {}
-}
-
-function stopSpeech() {
-  console.log('stopping speech recognition');
-  recognition.stop();
-  recognizing = false;
-}
-
 chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
   console.log(sender.tab ? 'from a content script:' + sender.tab.url : 'from the extension');
   console.log({ request });
   if (request.dimShortcutPressed) {
     sendResponse({ ack: 'Acknowledged.' });
-    if (!recognizing) {
-      startSpeech();
+    if (!speechService.recognizing) {
+      speechService.startSpeech();
     } else {
-      stopSpeech();
+      speechService.stopSpeech();
     }
     return;
   }
@@ -619,6 +572,42 @@ function reverseMapCustomCommands(commands: any) {
   }
   return newCommands;
 }
+
+function createMicDiv() {
+  const imageUrl = chrome.runtime.getURL('icon_large.png');
+  console.log({ imageUrl });
+  const voiceDimDiv = document.createElement('div');
+  voiceDimDiv.id = 'voiceDim';
+  voiceDimDiv.innerHTML = `
+    <div class="container">
+      <div class="textContainer">
+        <span id="transcript"></span>
+      </div>
+      <div class="imageContainer">
+        <img src="${imageUrl}" />
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(voiceDimDiv);
+
+  const imageDiv = document.querySelector('#voiceDim .imageContainer');
+  imageDiv?.addEventListener('click', () => {
+    speechService.startSpeech();
+  });
+}
+
+function createHelpDiv() {
+  const voiceDimHelp = document.createElement('div');
+  voiceDimHelp.id = 'voiceDimHelp';
+  voiceDimHelp.className = 'voiceDimHelp';
+  voiceDimHelp.innerText = '?';
+  voiceDimHelp.addEventListener('click', showHelpModal);
+  document.body.appendChild(voiceDimHelp);
+}
+
+function createHelpModal() {}
+function showHelpModal() {}
 
 async function $http(config: HttpClientConfig): Promise<Response> {
   return fetch(config.url, {
@@ -679,6 +668,7 @@ function createMaps(manifest: DestinyManifestSlice<['DestinyInventoryItemDefinit
 }
 
 getPerks();
+getCustomCommands();
 
 let observer = new MutationObserver((mutations) => {
   mutations.forEach((mutation) => {
@@ -687,7 +677,8 @@ let observer = new MutationObserver((mutations) => {
     for (let i = 0; i < mutation.addedNodes.length; i++) {
       const node = <Element>mutation.addedNodes[i];
       if (node.className && node.className.toLowerCase() == 'search-link') {
-        getCustomCommands();
+        createMicDiv();
+        createHelpDiv();
         break;
       }
     }
@@ -701,8 +692,31 @@ observer.observe(document.body, {
   characterData: false,
 });
 
-// init();
+let speechService: any;
+if (window.navigator.userAgent.indexOf('Chrome') >= 0) {
+  speechService = new SpeechService();
+} else {
+}
 
-// const client = new WebSocket('wss://localhost:10555');
+// …
 
-// client.send('test');
+// registerServiceWorker();
+// TODO: use this
+// const host = 'ws://localhost:7777';
+// var ws = new WebSocket(host);
+
+// function sendMessage(message: string) {
+//   if (ws === undefined) {
+//     ws = new WebSocket(host);
+//   }
+
+//   console.log('Sending to server', message);
+//   ws.send(message);
+//   // ws.onopen = () => {
+//   //   ws.send(JSON.stringify(message));
+//   // };
+
+//   ws.onmessage = (event: MessageEvent) => {
+//     console.log('received %s', event.data);
+//   };
+// }

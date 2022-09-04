@@ -9,7 +9,8 @@
   "content_scripts": [
     {
       "matches": ["https://*.destinyitemmanager.com/*"],
-      "js": ["js/dim-voice.js"]
+      "js": ["js/dim-voice.js"],
+      "css": ["css/dim-voice.css"]
     }
   ],
   "commands": {
@@ -33,5 +34,11 @@
     "open_in_tab": true
   },
   "host_permissions": ["https://www.bungie.net/*"],
-  "permissions": ["tabs", "storage"]
+  "permissions": ["tabs", "storage"],
+  "web_accessible_resources": [
+    {
+      "resources": ["mic.png", "icon_large.png"],
+      "matches": ["https://*.destinyitemmanager.com/*"]
+    }
+  ]
 }

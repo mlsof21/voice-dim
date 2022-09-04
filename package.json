@@ -29,15 +29,16 @@
   },
   "homepage": "https://github.com/mlsof21/dim-voice#readme",
   "dependencies": {
-    "@types/web": "^0.0.1",
     "bungie-api-ts": "^4.18.0",
     "fuse.js": "^6.6.2"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.193",
+    "@types/web": "^0.0.1",
     "@typescript/lib-dom": "npm:@types/web@^0.0.71",
     "copy-webpack-plugin": "^11.0.0",
     "dotenv-webpack": "^8.0.1",
+    "node-polyfill-webpack-plugin": "^2.0.1",
     "ts-loader": "^9.3.1",
     "typescript": "^4.7.4",
     "webpack": "^5.74.0",

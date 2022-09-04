@@ -2,6 +2,7 @@ const path = require('path');
 const dotenv = require('dotenv-webpack');
 const CopyPlugin = require('copy-webpack-plugin');
 const { CleanPlugin } = require('webpack');
+const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 const srcDir = path.join(__dirname, 'src', 'ts');
 
 const browsers = ['chrome', 'firefox'];
@@ -36,12 +37,15 @@ const configs = browsers.map((browser) => {
       new CopyPlugin({
         patterns: [
           { from: './icon.png', to: '../icon.png', context: 'public' },
+          { from: './icon_large.png', to: '../icon_large.png', context: 'public' },
+          { from: './mic.png', to: '../mic.png', context: 'public' },
           { from: `./manifest.${browser}.json`, to: '../manifest.json', context: 'public' },
           { from: 'html/', to: '../html/', context: 'src' },
           { from: 'css/', to: '../css/', context: 'src' },
         ],
       }),
       new dotenv(),
+      new NodePolyfillPlugin(),
     ],
     devtool: 'inline-source-map',
   };

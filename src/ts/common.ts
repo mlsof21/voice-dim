@@ -50,3 +50,9 @@ export function retrieve(key: string): Promise<any> {
     });
   });
 }
+
+export interface SpeechService {
+  startSpeech: () => void;
+  stopSpeech: () => void;
+  recognizing: boolean;
+}

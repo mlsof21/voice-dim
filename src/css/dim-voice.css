@@ -1,0 +1,70 @@
+#voiceDim {
+  position: fixed;
+  bottom: 100px;
+  right: 100px;
+  background-color: black;
+  border-radius: 15px;
+}
+
+.container {
+  display: flex;
+  flex-direction: row;
+  /* justify-content: center;
+  align-items: center; */
+}
+
+.textContainer {
+  display: none;
+  padding: 20px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 20px;
+  align-items: center;
+}
+
+.imageContainer {
+  height: 100px;
+  width: 100px;
+  justify-content: center;
+  text-align: center;
+  align-items: center;
+}
+
+.imageContainer img {
+  width: 85px;
+  height: 85px;
+  padding: 5px;
+}
+
+.pulse {
+  animation: pulse 3s infinite;
+  animation-direction: alternate;
+  animation-name: pulse;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.voiceDimHelp {
+  position: fixed;
+  bottom: 105px;
+  right: 65px;
+  background-color: black;
+  border-radius: 18px;
+  width: 1.5em;
+  font-size: 20px;
+  text-align: center;
+  border: white 1px solid;
+}
+
+.voiceDimHelp:hover {
+  cursor: pointer;
+}

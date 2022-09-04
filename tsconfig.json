@@ -1,4 +1,6 @@
 {
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"],
   "compilerOptions": {
     "strict": true,
     "module": "commonjs",
@@ -7,7 +9,7 @@
     "sourceMap": false,
     "rootDir": "src/ts",
     "outDir": "dist/js",
-    "noEmitOnError": true,
+    "noEmitOnError": false,
     "jsx": "react",
     "typeRoots": ["node_modules/@types"],
     "lib": ["ES2021.String"]
