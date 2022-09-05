@@ -71,12 +71,11 @@ export class SpeechService implements ISpeechService {
         console.log({ transcript });
         if (dimWords.some((word) => transcript.startsWith(word))) {
           parseSpeech(this.removeMagicWord(transcript));
-          this.stopSpeech();
         } else {
           console.log('no magic word, understood ', transcript);
           parseSpeech(transcript.toLowerCase());
-          this.stopSpeech();
         }
+        this.stopSpeech();
       }
     };
 

@@ -6,7 +6,7 @@ import {
   getDestinyManifestSlice,
 } from 'bungie-api-ts/destiny2';
 import Fuse from 'fuse.js';
-import { Action, retrieve } from './common';
+import { Action, retrieve, sleep } from './common';
 import { SpeechService } from './speech';
 
 const origConsoleLog = console.log;
@@ -176,14 +176,21 @@ export function parseSpeech(this: any, transcript: string) {
   console.log('parsing', transcript);
   let query = transcript.trim();
   const closestMatch = getClosestMatch(Object.keys(mappedCommands), query);
+
+  if (!closestMatch) {
+    console.log("Couldn't determine correct action");
+    return;
+  }
   const closestAction = getClosestMatch(Object.keys(potentialActions), mappedCommands[closestMatch]);
+  if (!closestAction) {
+    console.log("Couldn't determine correct action");
+    return;
+  }
   console.log({ closestAction });
 
   query = query.replace(closestMatch, '').trim();
-  if (closestMatch !== '') {
-    potentialActions[closestAction].call(this, query, closestAction);
-  }
-  clearSearchBar();
+  potentialActions[closestAction].call(this, query, closestAction);
+  // clearSearchBar();
 }
 
 function handleStoreItem(query: string) {
@@ -191,6 +198,7 @@ function handleStoreItem(query: string) {
   setTimeout(() => {
     const availableItems = getAllTransferableItems();
     const itemToStore = getClosestMatch(Object.keys(availableItems), query);
+    if (!itemToStore) return;
     const itemDiv = availableItems[itemToStore];
     itemDiv?.dispatchEvent(uiEvents.singleClick);
     setTimeout(() => {
@@ -199,24 +207,6 @@ function handleStoreItem(query: string) {
       searchBar?.dispatchEvent(uiEvents.escape);
     }, 500);
   }, 2000);
-}
-
-function handleEquipItem(query: string) {
-  populateSearchBar('-is:incurrentchar');
-  setTimeout(() => {
-    const availableItems = getAllTransferableItems();
-    const itemToStore = getClosestMatch(Object.keys(availableItems), query);
-    const itemDiv = availableItems[itemToStore];
-    itemDiv?.dispatchEvent(uiEvents.singleClick);
-    setTimeout(storeWeapon, 500);
-  }, 2000);
-}
-
-function storeWeapon() {
-  const currentClass = getCurrentCharacterClass();
-  const storeDiv = document.querySelector(`[title^="Store"] [data-icon*="${currentClass}"]`);
-  storeDiv?.dispatchEvent(uiEvents.singleClick);
-  clearSearchBar();
 }
 
 function getCurrentCharacterClass(): string {
@@ -236,44 +226,83 @@ function getCurrentCharacterClass(): string {
 function handleItemMovement(query: string, action: string) {
   console.log('in handleItemMovement', { query, action });
   query = query.replace('transfer', '');
-  let fullQuery = getGenericQuery(query);
-
-  const withQuery = getPerkQuery(query);
 
   // likely means we're looking for a specific weapon
-  if (fullQuery === '') {
-    console.log('looking for', query);
-    let timeout = 100;
-    if (withQuery !== '') {
-      populateSearchBar(withQuery);
-      timeout = 2000;
-    }
-    setTimeout(() => equipItemOnCurrentCharacter(query), timeout);
-  } else {
-    if (withQuery !== '') {
-      fullQuery += ` ${withQuery}`;
-    }
-    fullQuery += ' -is:incurrentchar';
+  const itemToMove = getItemToMove(query);
 
-    console.log('Full query being sent to DIM: ' + fullQuery);
-    transferByWeaponTypeQuery(fullQuery);
+  if (!itemToMove) return;
+
+  switch (action) {
+    case 'transfer':
+      transferItem(itemToMove);
+      break;
+    case 'equip':
+      equipItem(itemToMove);
+      break;
+    case 'store':
+      storeItem(itemToMove);
+      break;
+    default:
+      break;
   }
+  clearSearchBar();
 }
 
-function equipItemOnCurrentCharacter(query: string) {
-  const availableItems = getAllTransferableItems();
-  const itemToGet = getClosestMatch(Object.keys(availableItems), query);
-  populateSearchBar(`name:"${itemToGet}"`);
-  setTimeout(() => {
+function getItemToMove(query: string): Element | null {
+  let itemToMove: Element | null = null;
+  let nonPerkQuery = getGenericQuery(query);
+
+  const perkQuery = getPerkQuery(query);
+
+  if (nonPerkQuery === '') {
+    console.log('looking for', query);
+    if (perkQuery !== '') {
+      populateSearchBar(perkQuery, true);
+      sleep(2000);
+    }
+    const availableItems = getAllTransferableItems();
+    const itemToGet = getClosestMatch(Object.keys(availableItems), query);
+    populateSearchBar(`name:"${itemToGet}"`);
+    sleep(2000);
     const visibleItems = getVisibleItems();
     console.log({ visibleItems });
-    visibleItems[0]?.dispatchEvent(uiEvents.dblClick);
-  }, 2000);
+    itemToMove = visibleItems[0];
+  } else {
+    nonPerkQuery += ` ${perkQuery}`;
+    nonPerkQuery += ' -is:incurrentchar';
+
+    console.log('Full query being sent to DIM: ' + nonPerkQuery);
+    populateSearchBar(nonPerkQuery);
+    const filteredItems = getVisibleItems();
+    console.log(filteredItems);
+    if (filteredItems.length > 0) {
+      itemToMove = filteredItems[0];
+    }
+  }
+  return itemToMove;
+}
+
+function storeItem(item: Element) {
+  item?.dispatchEvent(uiEvents.singleClick);
+  sleep(200);
+  const vaultDiv = document.querySelector('.item-popup [title^="Vault"]');
+  vaultDiv?.dispatchEvent(uiEvents.singleClick);
+}
+
+function transferItem(item: Element) {
+  item.dispatchEvent(uiEvents.singleClick);
+  sleep(200);
+  const currentClass = getCurrentCharacterClass();
+  const storeDiv = document.querySelector(`[title^="Store"] [data-icon*="${currentClass}"]`);
+}
+
+function equipItem(item: Element) {
+  item.dispatchEvent(uiEvents.dblClick);
 }
 
 function getGenericQuery(query: string) {
-  let fullQuery = '';
-  query = query.split('with ')[0];
+  let genericQuery = '';
+  query = query.split('with ')[0].trim();
   const genericQueries = [
     rarityQueries,
     weaponTypeQueries,
@@ -284,30 +313,36 @@ function getGenericQuery(query: string) {
     otherQueries,
   ];
 
-  for (const genericQuery of genericQueries) {
-    fullQuery += checkForGenericTerms(genericQuery, query);
+  for (const gq of genericQueries) {
+    genericQuery += checkForGenericTerms(gq, query);
   }
-  return fullQuery.trim();
+  return genericQuery.trim();
 }
 
 function getPerkQuery(query: string) {
-  let withQuery = '';
+  let perkQuery = '';
   let perkNamesToSearch = '';
   if (query.includes(' with ')) {
-    [query, perkNamesToSearch] = query.split(' with ').map((x) => {
-      return x.trim();
-    });
-    const splitPerkNames = perkNamesToSearch.split(' and ').map((x) => {
-      return x.trim();
-    });
+    [query, perkNamesToSearch] = query
+      .split(' with ')
+      .map((x) => {
+        return x.trim();
+      })
+      .filter((x) => x !== '');
+    const splitPerkNames = perkNamesToSearch
+      .split(' and ')
+      .map((x) => {
+        return x.trim();
+      })
+      .filter((x) => x !== '');
     const perkNames = [];
     for (const perkName of splitPerkNames) {
       const closestPerk = getClosestMatch(knownPerks, perkName);
-      perkNames.push(`perkname:"${closestPerk}"`);
+      if (closestPerk && closestPerk !== '') perkNames.push(`perkname:"${closestPerk}"`);
     }
-    withQuery = perkNames.join(' ');
+    perkQuery = perkNames.join(' ');
   }
-  return withQuery;
+  return perkQuery;
 }
 
 function handleStartFarmingMode() {
@@ -415,7 +450,7 @@ function getAllTransferableItems(): Record<string, Element> {
   return items;
 }
 
-function getClosestMatch(availableItems: string[], query: string): string {
+function getClosestMatch(availableItems: string[], query: string): string | null {
   const options = {
     includeScore: true,
     shouldSort: true,
@@ -423,17 +458,10 @@ function getClosestMatch(availableItems: string[], query: string): string {
   console.log({ availableItems });
 
   const fuse = new Fuse(availableItems, options);
-
-  // const soundsLike = [];
-  // for (const item of availableItems) {
-  //   soundsLike.push({ word: item, query, score: natural.Metaphone.compare(item, query) });
-  // }
-  // console.log({ soundsLike });
-
   const result = fuse.search(query);
   console.log({ result, query });
 
-  if (result.length > 0 && typeof result[0].score !== 'undefined' && result[0].score < 0.5) {
+  if (isAcceptableResult(result)) {
     return result[0].item;
   }
 
@@ -443,17 +471,22 @@ function getClosestMatch(availableItems: string[], query: string): string {
   for (const split of splitQuery) {
     const splitResult = fuse.search(split);
     console.log({ splitResult, split });
-    return splitResult.length > 0 ? splitResult[0].item : '';
+    return isAcceptableResult(splitResult) ? splitResult[0].item : '';
   }
 
-  return result.length > 0 ? result[0].item : '';
+  return null;
 }
 
-function populateSearchBar(searchInput: string) {
+function isAcceptableResult(result: Fuse.FuseResult<string>[]): boolean {
+  return result.length > 0 && typeof result[0].score !== 'undefined' && result[0].score < 0.5;
+}
+
+function populateSearchBar(searchInput: string, clearFirst: boolean = false) {
   console.log('Populating search bar with', searchInput);
   if (!searchBar) searchBar = <HTMLInputElement>document.getElementsByName('filter')[0];
   if (searchBar) {
-    searchBar.value = searchInput;
+    if (clearFirst) clearSearchBar();
+    searchBar.value += ' ' + searchInput;
     const inputFunc = () => {
       searchBar?.dispatchEvent(uiEvents.input);
     };
@@ -469,7 +502,7 @@ function populateSearchBar(searchInput: string) {
     const actions = [
       { func: inputFunc, timeout: 100 },
       { func: enterFunc, timeout: 1000 },
-      { func: escapeFunc, timeout: 1000 },
+      // { func: escapeFunc, timeout: 1000 },
     ];
     performUiInteractions(actions);
   }
@@ -490,10 +523,9 @@ function clearSearchBar() {
 }
 
 function performUiInteractions(actions: Action[]) {
-  let totalTimeout = 0;
   for (let i = 0; i < actions.length; i++) {
-    totalTimeout += actions[i].timeout;
-    setTimeout(actions[i].func, totalTimeout);
+    actions[i].func;
+    sleep(actions[i].timeout);
   }
 }
 
@@ -508,26 +540,7 @@ function getVisibleItems(items: NodeListOf<Element> | undefined = undefined): El
   return result;
 }
 
-function transferByWeaponTypeQuery(searchInput: string) {
-  populateSearchBar(searchInput);
-  const transferFunc = function () {
-    const filteredItems = getVisibleItems();
-    console.log(filteredItems);
-    if (filteredItems.length > 0) {
-      filteredItems[0].dispatchEvent(uiEvents.dblClick);
-    }
-  };
-  const escapeFunc = function () {
-    searchBar?.focus();
-    searchBar?.dispatchEvent(uiEvents.escape);
-  };
-  const actions = [
-    { func: transferFunc, timeout: 2000 },
-    { func: escapeFunc, timeout: 1000 },
-  ];
-
-  performUiInteractions(actions);
-}
+function transferByWeaponTypeQuery(searchInput: string) {}
 
 chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
   console.log(sender.tab ? 'from a content script:' + sender.tab.url : 'from the extension');
@@ -684,31 +697,4 @@ observer.observe(document.body, {
   characterData: false,
 });
 
-let speechService: any;
-if (window.navigator.userAgent.indexOf('Chrome') >= 0) {
-  speechService = new SpeechService();
-} else {
-}
-
-// …
-
-// registerServiceWorker();
-// TODO: use this
-// const host = 'ws://localhost:7777';
-// var ws = new WebSocket(host);
-
-// function sendMessage(message: string) {
-//   if (ws === undefined) {
-//     ws = new WebSocket(host);
-//   }
-
-//   console.log('Sending to server', message);
-//   ws.send(message);
-//   // ws.onopen = () => {
-//   //   ws.send(JSON.stringify(message));
-//   // };
-
-//   ws.onmessage = (event: MessageEvent) => {
-//     console.log('received %s', event.data);
-//   };
-// }
+const speechService = new SpeechService();
