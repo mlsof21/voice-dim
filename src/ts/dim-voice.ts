@@ -6,7 +6,7 @@ import {
   getDestinyManifestSlice,
 } from 'bungie-api-ts/destiny2';
 import Fuse from 'fuse.js';
-import { Action, retrieve, sleep } from './common';
+import { Action, createAction, initAction, retrieve, sleep } from './common';
 import { SpeechService } from './speech';
 
 const origConsoleLog = console.log;
@@ -164,7 +164,7 @@ type ActionFunction = Record<
 const potentialActions: ActionFunction = {
   transfer: handleItemMovement,
   equip: handleItemMovement,
-  store: handleItemMovement,
+  store: handleStoreItem,
   startFarming: handleStartFarmingMode,
   stopFarming: handleStopFarmingMode,
   maxPower: handleEquipMaxPower,
@@ -193,20 +193,17 @@ export function parseSpeech(this: any, transcript: string) {
   // clearSearchBar();
 }
 
-function handleStoreItem(query: string) {
+async function handleStoreItem(query: string) {
   populateSearchBar('is:incurrentchar');
-  setTimeout(() => {
-    const availableItems = getAllTransferableItems();
-    const itemToStore = getClosestMatch(Object.keys(availableItems), query);
-    if (!itemToStore) return;
-    const itemDiv = availableItems[itemToStore];
-    itemDiv?.dispatchEvent(uiEvents.singleClick);
-    setTimeout(() => {
-      const vaultDiv = document.querySelector('.item-popup [title^="Vault"]');
-      vaultDiv?.dispatchEvent(uiEvents.singleClick);
-      searchBar?.dispatchEvent(uiEvents.escape);
-    }, 500);
-  }, 2000);
+  await sleep(2000);
+  const availableItems = getAllTransferableItems();
+  const itemToStore = getClosestMatch(Object.keys(availableItems), query);
+  if (!itemToStore) return;
+  const itemDiv = availableItems[itemToStore];
+  itemDiv?.dispatchEvent(uiEvents.singleClick);
+  await sleep(200);
+  const vaultDiv = document.querySelector('.item-popup [title^="Vault"]');
+  vaultDiv?.dispatchEvent(uiEvents.singleClick);
 }
 
 function getCurrentCharacterClass(): string {
@@ -223,12 +220,12 @@ function getCurrentCharacterClass(): string {
 
   return '';
 }
-function handleItemMovement(query: string, action: string) {
+async function handleItemMovement(query: string, action: string): Promise<void> {
   console.log('in handleItemMovement', { query, action });
-  query = query.replace('transfer', '');
+  // query = query.replace('transfer', '');
 
   // likely means we're looking for a specific weapon
-  const itemToMove = getItemToMove(query);
+  const itemToMove = await getItemToMove(query);
 
   if (!itemToMove) return;
 
@@ -239,16 +236,13 @@ function handleItemMovement(query: string, action: string) {
     case 'equip':
       equipItem(itemToMove);
       break;
-    case 'store':
-      storeItem(itemToMove);
-      break;
     default:
       break;
   }
   clearSearchBar();
 }
 
-function getItemToMove(query: string): Element | null {
+async function getItemToMove(query: string): Promise<Element | null> {
   let itemToMove: Element | null = null;
   let nonPerkQuery = getGenericQuery(query);
 
@@ -258,21 +252,21 @@ function getItemToMove(query: string): Element | null {
     console.log('looking for', query);
     if (perkQuery !== '') {
       populateSearchBar(perkQuery, true);
-      sleep(2000);
+      await sleep(2000);
     }
     const availableItems = getAllTransferableItems();
     const itemToGet = getClosestMatch(Object.keys(availableItems), query);
     populateSearchBar(`name:"${itemToGet}"`);
-    sleep(2000);
+    await sleep(2000);
     const visibleItems = getVisibleItems();
     console.log({ visibleItems });
     itemToMove = visibleItems[0];
   } else {
-    nonPerkQuery += ` ${perkQuery}`;
-    nonPerkQuery += ' -is:incurrentchar';
+    nonPerkQuery += ` ${perkQuery} -is:currentchar`;
 
     console.log('Full query being sent to DIM: ' + nonPerkQuery);
     populateSearchBar(nonPerkQuery);
+    await sleep(2000);
     const filteredItems = getVisibleItems();
     console.log(filteredItems);
     if (filteredItems.length > 0) {
@@ -282,16 +276,18 @@ function getItemToMove(query: string): Element | null {
   return itemToMove;
 }
 
-function storeItem(item: Element) {
+async function storeItem(item: Element) {
   item?.dispatchEvent(uiEvents.singleClick);
-  sleep(200);
+  await sleep(200);
   const vaultDiv = document.querySelector('.item-popup [title^="Vault"]');
   vaultDiv?.dispatchEvent(uiEvents.singleClick);
 }
 
-function transferItem(item: Element) {
+async function transferItem(item: Element) {
+  console.log('Transferring');
+
   item.dispatchEvent(uiEvents.singleClick);
-  sleep(200);
+  await sleep(200);
   const currentClass = getCurrentCharacterClass();
   const storeDiv = document.querySelector(`[title^="Store"] [data-icon*="${currentClass}"]`);
 }
@@ -347,13 +343,12 @@ function getPerkQuery(query: string) {
 
 function handleStartFarmingMode() {
   console.log('Starting farming mode');
-  openCurrentCharacterLoadoutMenu();
   const farmingClick = () => {
     const farmingSpan = document.querySelector('.loadout-menu ul li span');
     farmingSpan?.dispatchEvent(uiEvents.singleClick);
   };
 
-  const actions = [{ func: farmingClick, timeout: 0 }];
+  const actions = [createAction(openCurrentCharacterLoadoutMenu, 200), createAction(farmingClick)];
 
   performUiInteractions(actions);
 }
@@ -364,13 +359,12 @@ function handleStopFarmingMode() {
 }
 
 function handleEquipMaxPower() {
-  openCurrentCharacterLoadoutMenu();
   const maxPowerClick = () => {
     const maxPowerSpan = document.querySelector('span[class^=MaxlightButton]');
     maxPowerSpan?.dispatchEvent(uiEvents.singleClick);
   };
 
-  const actions = [{ func: maxPowerClick, timeout: 0 }];
+  const actions = [createAction(openCurrentCharacterLoadoutMenu), createAction(maxPowerClick, 200)];
 
   performUiInteractions(actions);
 }
@@ -385,16 +379,14 @@ function handleEquipLoadout(loadoutName: string) {
   if (loadoutName.includes('equip loadout') || loadoutName.includes('equip load out'))
     loadoutName = loadoutName.replace('equip loadout', '').replace('equip load out', '');
 
-  openCurrentCharacterLoadoutMenu();
   const loadoutClick = () => {
     const availableLoadoutNames = getLoadoutNames();
-    const loadoutResult = getClosestMatch(availableLoadoutNames, loadoutName);
-    const loadoutToEquip = loadoutResult;
+    const loadoutToEquip = getClosestMatch(availableLoadoutNames, loadoutName);
     const loadoutToEquipSpan = document.querySelector(`.loadout-menu span[title="${loadoutToEquip}"]`);
     loadoutToEquipSpan?.dispatchEvent(uiEvents.singleClick);
   };
 
-  const actions = [{ func: loadoutClick, timeout: 0 }];
+  const actions = [createAction(openCurrentCharacterLoadoutMenu), createAction(loadoutClick, 200)];
 
   performUiInteractions(actions);
 }
@@ -409,16 +401,12 @@ function getLoadoutNames(): string[] {
 }
 
 function handleCollectPostmaster() {
-  const postmasterButton = document.querySelector('[class^="PullFromPostmaster"]');
-
   const postmasterClick = () => {
+    const postmasterButton = document.querySelector('[class^="PullFromPostmaster"]');
     postmasterButton?.dispatchEvent(uiEvents.singleClick);
   };
 
-  const actions: Action[] = [
-    { func: postmasterClick, timeout: 500 },
-    { func: postmasterClick, timeout: 0 },
-  ];
+  const actions: Action[] = [createAction(postmasterClick), createAction(postmasterClick, 500)];
   performUiInteractions(actions);
 }
 
@@ -481,30 +469,16 @@ function isAcceptableResult(result: Fuse.FuseResult<string>[]): boolean {
   return result.length > 0 && typeof result[0].score !== 'undefined' && result[0].score < 0.5;
 }
 
-function populateSearchBar(searchInput: string, clearFirst: boolean = false) {
+async function populateSearchBar(searchInput: string, clearFirst: boolean = false): Promise<void> {
   console.log('Populating search bar with', searchInput);
   if (!searchBar) searchBar = <HTMLInputElement>document.getElementsByName('filter')[0];
   if (searchBar) {
     if (clearFirst) clearSearchBar();
     searchBar.value += ' ' + searchInput;
-    const inputFunc = () => {
-      searchBar?.dispatchEvent(uiEvents.input);
-    };
-
-    const enterFunc = () => {
-      searchBar?.focus();
-      searchBar?.dispatchEvent(uiEvents.enter);
-    };
-    const escapeFunc = () => {
-      searchBar?.focus();
-      searchBar?.dispatchEvent(uiEvents.escape);
-    };
-    const actions = [
-      { func: inputFunc, timeout: 100 },
-      { func: enterFunc, timeout: 1000 },
-      // { func: escapeFunc, timeout: 1000 },
-    ];
-    performUiInteractions(actions);
+    searchBar?.dispatchEvent(uiEvents.input);
+    await sleep(200);
+    searchBar?.focus();
+    searchBar?.dispatchEvent(uiEvents.enter);
   }
 }
 
@@ -513,19 +487,15 @@ function clearSearchBar() {
   if (!searchBar) searchBar = <HTMLInputElement>document.getElementsByName('filter')[0];
   if (searchBar) {
     searchBar.value = '';
-    const escapeFunc = () => {
-      searchBar?.focus();
-      searchBar?.dispatchEvent(uiEvents.escape);
-      searchBar?.blur();
-    };
-    performUiInteractions([{ func: escapeFunc, timeout: 100 }]);
+    searchBar?.focus();
+    searchBar?.dispatchEvent(uiEvents.escape);
+    searchBar?.blur();
   }
 }
 
-function performUiInteractions(actions: Action[]) {
+async function performUiInteractions(actions: Action[]) {
   for (let i = 0; i < actions.length; i++) {
-    actions[i].func;
-    sleep(actions[i].timeout);
+    setTimeout(actions[i].func, actions[i].timeout);
   }
 }
 
@@ -539,8 +509,6 @@ function getVisibleItems(items: NodeListOf<Element> | undefined = undefined): El
   });
   return result;
 }
-
-function transferByWeaponTypeQuery(searchInput: string) {}
 
 chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
   console.log(sender.tab ? 'from a content script:' + sender.tab.url : 'from the extension');

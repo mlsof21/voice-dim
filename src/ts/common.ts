@@ -1,14 +1,23 @@
-export type Action = {
+export interface Action {
   func: () => void;
   timeout: number;
+}
+
+export const initAction = (options?: Partial<Action>): Action => {
+  const defaults: Action = {
+    func: () => {},
+    timeout: 0,
+  };
+
+  return {
+    ...defaults,
+    ...options,
+  };
 };
 
-export function sleep(sleepTimeInMs: number) {
-  var start = new Date().getTime(),
-    expire = start + sleepTimeInMs;
-  while (new Date().getTime() < expire) {}
-  return;
-}
+export const createAction = (func: () => void, timeout: number = 0): Action => initAction({ func, timeout });
+
+export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(func: F, waitFor: number = 300) => {
   let timeout: NodeJS.Timeout;
