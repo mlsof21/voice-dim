@@ -9,8 +9,8 @@
   "content_scripts": [
     {
       "matches": ["https://*.destinyitemmanager.com/*inventory"],
-      "js": ["js/dim-voice.js"],
-      "css": ["css/dim-voice.css"]
+      "js": ["js/voiceDim.js"],
+      "css": ["css/voiceDim.css"]
     }
   ],
   "commands": {

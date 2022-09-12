@@ -13,7 +13,7 @@ function onChange() {
     const dimTab = tabs.filter((tab) => tab.url?.match(/destinyitemmanager\.com.*inventory/))[0];
     if (dimTab.id)
       chrome.tabs.sendMessage(dimTab.id, 'shortcut updated', (response) => {
-        console.log('[dim-voice]', { response });
+        console.log('[voice-dim]', { response });
       });
   });
 }

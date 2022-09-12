@@ -190,7 +190,6 @@ export function parseSpeech(this: any, transcript: string) {
 
   query = query.replace(closestMatch, '').trim();
   potentialActions[closestAction].call(this, query, closestAction);
-  // clearSearchBar();
 }
 
 async function handleStoreItem(query: string) {
@@ -226,7 +225,6 @@ function getCurrentCharacterClass(): string {
 }
 async function handleItemMovement(query: string, action: string): Promise<void> {
   console.log('in handleItemMovement', { query, action });
-
   const itemToMove = await getItemToMove(query);
   console.log({ itemToMove });
   if (!itemToMove) return;
@@ -321,11 +319,6 @@ function getGenericQuery(query: string) {
 
 function getPerkQuery(query: string) {
   let perkQuery = '';
-  // [query, perkNamesToSearch] = query
-  //   .map((x) => {
-  //     return x.trim();
-  //   })
-  //   .filter((x) => x !== '');
   const splitPerkNames = query
     .split(' and ')
     .map((x) => {

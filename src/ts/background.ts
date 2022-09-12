@@ -1,12 +1,12 @@
 chrome.commands.onCommand.addListener((command: any) => {
-  console.log(`[dim-voice] Command "${command}" triggered`);
+  console.log(`[voice-dim] Command "${command}" triggered`);
 
   chrome.tabs.query({}, (tabs: any[]) => {
     const dimTabs = tabs.filter((tab: { url: string }) => tab.url?.match(/destinyitemmanager\.com.*inventory/));
 
     if (dimTabs && dimTabs[0]?.id)
       chrome.tabs.sendMessage(dimTabs[0].id, { dimShortcutPressed: true }, (response: any) => {
-        console.log('[dim-voice]', { response });
+        console.log('[voice-dim]', { response });
       });
   });
 });

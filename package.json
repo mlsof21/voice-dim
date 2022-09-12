@@ -1,8 +1,8 @@
 {
-  "name": "dim-voice",
+  "name": "voice-dim",
   "version": "1.0.2",
   "description": "Perform common DIM actions by using speech recognition.",
-  "main": "dist/js/dim-voice.js",
+  "main": "dist/js/voice-dim.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "zip": "npm run build && python scripts/build.py",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/mlsof21/dim-voice.git"
+    "url": "https://github.com/mlsof21/voice-dim.git"
   },
   "keywords": [
     "Voice DIM",
@@ -25,9 +25,9 @@
   "author": "mlsof21",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/mlsof21/dim-voice/issues"
+    "url": "https://github.com/mlsof21/voice-dim/issues"
   },
-  "homepage": "https://github.com/mlsof21/dim-voice#readme",
+  "homepage": "https://github.com/mlsof21/voice-dim#readme",
   "dependencies": {
     "bungie-api-ts": "^4.18.0",
     "fuse.js": "^6.6.2"

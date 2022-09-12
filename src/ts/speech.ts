@@ -1,5 +1,5 @@
 import { SpeechService as ISpeechService } from './common';
-import { parseSpeech } from './dim-voice';
+import { parseSpeech } from './voiceDim';
 
 const dimWords = ['dim', 'damn', 'then', 'them'];
 

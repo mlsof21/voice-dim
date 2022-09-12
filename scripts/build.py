@@ -8,4 +8,4 @@ if __name__ == "__main__":
         manifest = json.load(open(f'./dist/{browser}/manifest.json'))
         version = manifest['version']
         shutil.make_archive(
-            f'build/dim-voice-{browser}.{version}', 'zip', f'./dist/{browser}')
+            f'build/voice-dim-{browser}.{version}', 'zip', f'./dist/{browser}')

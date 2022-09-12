@@ -9,7 +9,7 @@
   "content_scripts": [
     {
       "matches": ["https://*.destinyitemmanager.com/*"],
-      "js": ["js/dim-voice.js"]
+      "js": ["js/voice-dim.js"]
     }
   ],
   "commands": {
