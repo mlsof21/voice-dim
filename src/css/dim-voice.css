@@ -1,7 +1,7 @@
 #voiceDim {
   position: fixed;
-  bottom: 100px;
-  right: 100px;
+  bottom: 10%;
+  right: 8%;
   background-color: black;
   border-radius: 15px;
 }
@@ -55,14 +55,20 @@
 
 .voiceDimHelp {
   position: fixed;
-  bottom: 105px;
-  right: 65px;
+  bottom: 10%;
+  right: 5%;
   background-color: black;
-  border-radius: 18px;
-  width: 1.5em;
-  font-size: 20px;
+  border-radius: 50%;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 15px;
   text-align: center;
+  display: flex;
   border: white 1px solid;
+}
+
+.questionMark {
+  margin: auto;
 }
 
 .voiceDimHelp:hover {

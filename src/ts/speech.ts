@@ -12,6 +12,8 @@ export class SpeechService implements ISpeechService {
     this.recognizing = true;
     const imageDiv = document.querySelector('.imageContainer');
     const textDiv = document.querySelector('.textContainer');
+    const transcript = document.getElementById('transcript');
+    (<HTMLSpanElement>transcript).innerText = '';
     (<HTMLDivElement>textDiv).style.display = 'flex';
     try {
       // calling it twice will throw...
@@ -34,7 +36,7 @@ export class SpeechService implements ISpeechService {
       const transcript = document.getElementById('transcript');
       (<HTMLDivElement>textDiv).style.display = 'none';
       (<HTMLSpanElement>transcript).innerText = '';
-    }, 10000);
+    }, 7000);
   }
 
   private removeMagicWord(transcript: string) {
@@ -75,6 +77,8 @@ export class SpeechService implements ISpeechService {
           console.log('no magic word, understood ', transcript);
           parseSpeech(transcript.toLowerCase());
         }
+
+        chrome.runtime.sendMessage({ type: 'notification', message: 'testing' });
         this.stopSpeech();
       }
     };

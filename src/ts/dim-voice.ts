@@ -199,11 +199,15 @@ async function handleStoreItem(query: string) {
   const availableItems = getAllTransferableItems();
   const itemToStore = getClosestMatch(Object.keys(availableItems), query);
   if (!itemToStore) return;
+  populateSearchBar(`name:"${itemToStore}"`);
+  await sleep(2000);
   const itemDiv = availableItems[itemToStore];
   itemDiv?.dispatchEvent(uiEvents.singleClick);
   await sleep(200);
   const vaultDiv = document.querySelector('.item-popup [title^="Vault"]');
   vaultDiv?.dispatchEvent(uiEvents.singleClick);
+  sleep(500);
+  clearSearchBar();
 }
 
 function getCurrentCharacterClass(): string {
@@ -222,11 +226,9 @@ function getCurrentCharacterClass(): string {
 }
 async function handleItemMovement(query: string, action: string): Promise<void> {
   console.log('in handleItemMovement', { query, action });
-  // query = query.replace('transfer', '');
 
-  // likely means we're looking for a specific weapon
   const itemToMove = await getItemToMove(query);
-
+  console.log({ itemToMove });
   if (!itemToMove) return;
 
   switch (action) {
@@ -239,14 +241,16 @@ async function handleItemMovement(query: string, action: string): Promise<void> 
     default:
       break;
   }
+  sleep(1000);
   clearSearchBar();
 }
 
 async function getItemToMove(query: string): Promise<Element | null> {
   let itemToMove: Element | null = null;
-  let nonPerkQuery = getGenericQuery(query);
+  let splitQuery = query.split(' with ').map((x) => x.trim());
+  let nonPerkQuery = getGenericQuery(splitQuery[0]);
 
-  const perkQuery = getPerkQuery(query);
+  const perkQuery = splitQuery.length > 1 && splitQuery[1] !== '' ? getPerkQuery(splitQuery[1]) : '';
 
   if (nonPerkQuery === '') {
     console.log('looking for', query);
@@ -255,7 +259,7 @@ async function getItemToMove(query: string): Promise<Element | null> {
       await sleep(2000);
     }
     const availableItems = getAllTransferableItems();
-    const itemToGet = getClosestMatch(Object.keys(availableItems), query);
+    const itemToGet = getClosestMatch(Object.keys(availableItems), splitQuery[0]);
     populateSearchBar(`name:"${itemToGet}"`);
     await sleep(2000);
     const visibleItems = getVisibleItems();
@@ -290,6 +294,7 @@ async function transferItem(item: Element) {
   await sleep(200);
   const currentClass = getCurrentCharacterClass();
   const storeDiv = document.querySelector(`[title^="Store"] [data-icon*="${currentClass}"]`);
+  storeDiv?.dispatchEvent(uiEvents.singleClick);
 }
 
 function equipItem(item: Element) {
@@ -298,7 +303,6 @@ function equipItem(item: Element) {
 
 function getGenericQuery(query: string) {
   let genericQuery = '';
-  query = query.split('with ')[0].trim();
   const genericQueries = [
     rarityQueries,
     weaponTypeQueries,
@@ -317,40 +321,31 @@ function getGenericQuery(query: string) {
 
 function getPerkQuery(query: string) {
   let perkQuery = '';
-  let perkNamesToSearch = '';
-  if (query.includes(' with ')) {
-    [query, perkNamesToSearch] = query
-      .split(' with ')
-      .map((x) => {
-        return x.trim();
-      })
-      .filter((x) => x !== '');
-    const splitPerkNames = perkNamesToSearch
-      .split(' and ')
-      .map((x) => {
-        return x.trim();
-      })
-      .filter((x) => x !== '');
-    const perkNames = [];
-    for (const perkName of splitPerkNames) {
-      const closestPerk = getClosestMatch(knownPerks, perkName);
-      if (closestPerk && closestPerk !== '') perkNames.push(`perkname:"${closestPerk}"`);
-    }
-    perkQuery = perkNames.join(' ');
+  // [query, perkNamesToSearch] = query
+  //   .map((x) => {
+  //     return x.trim();
+  //   })
+  //   .filter((x) => x !== '');
+  const splitPerkNames = query
+    .split(' and ')
+    .map((x) => {
+      return x.trim();
+    })
+    .filter((x) => x !== '');
+  const perkNames = [];
+  for (const perkName of splitPerkNames) {
+    const closestPerk = getClosestMatch(knownPerks, perkName);
+    if (closestPerk && closestPerk !== '') perkNames.push(`perkname:"${closestPerk}"`);
   }
+  perkQuery = perkNames.join(' ');
   return perkQuery;
 }
 
-function handleStartFarmingMode() {
+async function handleStartFarmingMode() {
   console.log('Starting farming mode');
-  const farmingClick = () => {
-    const farmingSpan = document.querySelector('.loadout-menu ul li span');
-    farmingSpan?.dispatchEvent(uiEvents.singleClick);
-  };
-
-  const actions = [createAction(openCurrentCharacterLoadoutMenu, 200), createAction(farmingClick)];
-
-  performUiInteractions(actions);
+  await openCurrentCharacterLoadoutMenu();
+  const farmingSpan = document.querySelector('.loadout-menu ul li span');
+  farmingSpan?.dispatchEvent(uiEvents.singleClick);
 }
 
 function handleStopFarmingMode() {
@@ -358,37 +353,27 @@ function handleStopFarmingMode() {
   stopButton?.dispatchEvent(uiEvents.singleClick);
 }
 
-function handleEquipMaxPower() {
-  const maxPowerClick = () => {
-    const maxPowerSpan = document.querySelector('span[class^=MaxlightButton]');
-    maxPowerSpan?.dispatchEvent(uiEvents.singleClick);
-  };
-
-  const actions = [createAction(openCurrentCharacterLoadoutMenu), createAction(maxPowerClick, 200)];
-
-  performUiInteractions(actions);
+async function handleEquipMaxPower() {
+  await openCurrentCharacterLoadoutMenu();
+  const maxPowerSpan = document.querySelector('span[class^=MaxlightButton]');
+  maxPowerSpan?.dispatchEvent(uiEvents.singleClick);
 }
 
-function openCurrentCharacterLoadoutMenu() {
+async function openCurrentCharacterLoadoutMenu() {
   const currentCharacter = document.querySelector('.character.current');
   currentCharacter?.dispatchEvent(uiEvents.singleClick);
+  await sleep(500);
 }
 
-function handleEquipLoadout(loadoutName: string) {
+async function handleEquipLoadout(loadoutName: string) {
   console.log('Equipping loadout', loadoutName);
   if (loadoutName.includes('equip loadout') || loadoutName.includes('equip load out'))
     loadoutName = loadoutName.replace('equip loadout', '').replace('equip load out', '');
-
-  const loadoutClick = () => {
-    const availableLoadoutNames = getLoadoutNames();
-    const loadoutToEquip = getClosestMatch(availableLoadoutNames, loadoutName);
-    const loadoutToEquipSpan = document.querySelector(`.loadout-menu span[title="${loadoutToEquip}"]`);
-    loadoutToEquipSpan?.dispatchEvent(uiEvents.singleClick);
-  };
-
-  const actions = [createAction(openCurrentCharacterLoadoutMenu), createAction(loadoutClick, 200)];
-
-  performUiInteractions(actions);
+  await openCurrentCharacterLoadoutMenu();
+  const availableLoadoutNames = getLoadoutNames();
+  const loadoutToEquip = getClosestMatch(availableLoadoutNames, loadoutName);
+  const loadoutToEquipSpan = document.querySelector(`.loadout-menu span[title="${loadoutToEquip}"]`);
+  loadoutToEquipSpan?.dispatchEvent(uiEvents.singleClick);
 }
 
 function getLoadoutNames(): string[] {
@@ -400,14 +385,11 @@ function getLoadoutNames(): string[] {
   return loadoutNames;
 }
 
-function handleCollectPostmaster() {
-  const postmasterClick = () => {
-    const postmasterButton = document.querySelector('[class^="PullFromPostmaster"]');
-    postmasterButton?.dispatchEvent(uiEvents.singleClick);
-  };
-
-  const actions: Action[] = [createAction(postmasterClick), createAction(postmasterClick, 500)];
-  performUiInteractions(actions);
+async function handleCollectPostmaster() {
+  const postmasterButton = document.querySelector('[class^="PullFromPostmaster"]');
+  postmasterButton?.dispatchEvent(uiEvents.singleClick);
+  await sleep(500);
+  postmasterButton?.dispatchEvent(uiEvents.singleClick);
 }
 
 function checkForGenericTerms(queries: Record<string, string>, query: string) {
@@ -484,19 +466,8 @@ async function populateSearchBar(searchInput: string, clearFirst: boolean = fals
 
 function clearSearchBar() {
   console.log('Clearing search bar');
-  if (!searchBar) searchBar = <HTMLInputElement>document.getElementsByName('filter')[0];
-  if (searchBar) {
-    searchBar.value = '';
-    searchBar?.focus();
-    searchBar?.dispatchEvent(uiEvents.escape);
-    searchBar?.blur();
-  }
-}
-
-async function performUiInteractions(actions: Action[]) {
-  for (let i = 0; i < actions.length; i++) {
-    setTimeout(actions[i].func, actions[i].timeout);
-  }
+  const clearButton = document.querySelector('.filter-bar-button[title^=Clear]');
+  clearButton?.dispatchEvent(uiEvents.singleClick);
 }
 
 function getVisibleItems(items: NodeListOf<Element> | undefined = undefined): Element[] {
@@ -574,7 +545,7 @@ function createHelpDiv() {
   const voiceDimHelp = document.createElement('div');
   voiceDimHelp.id = 'voiceDimHelp';
   voiceDimHelp.className = 'voiceDimHelp';
-  voiceDimHelp.innerText = '?';
+  voiceDimHelp.innerHTML = '<span class="questionMark">?</span>';
   voiceDimHelp.addEventListener('click', showHelpModal);
   document.body.appendChild(voiceDimHelp);
 }
@@ -652,6 +623,7 @@ let observer = new MutationObserver((mutations) => {
       if (node.className && node.className.toLowerCase() == 'search-link') {
         createMicDiv();
         createHelpDiv();
+        observer.disconnect();
         break;
       }
     }
