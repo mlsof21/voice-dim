@@ -1,28 +1,17 @@
 {
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"],
   "compilerOptions": {
-    "target": "es6",
-    "typeRoots": ["node_modules/@types"],
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
     "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "sourceMap": true,
-    "declaration": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": true,
-    "incremental": true,
-    "rootDir": "src/ts"
-  },
-  "include": ["./src/ts/*"],
-  "exclude": ["node_modules", "build"]
+    "module": "commonjs",
+    "target": "es6",
+    "esModuleInterop": true,
+    "sourceMap": false,
+    "rootDir": "src/ts",
+    "outDir": "dist/js",
+    "noEmitOnError": false,
+    "jsx": "react",
+    "typeRoots": ["node_modules/@types"],
+    "lib": ["ES2021.String"]
+  }
 }

@@ -1,0 +1,46 @@
+{
+  "name": "Voice DIM",
+  "description": "Control DIM with your voice.",
+  "version": "1.1.0",
+  "manifest_version": 2,
+  "background": {
+    "scripts": ["js/background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.destinyitemmanager.com/*"],
+      "js": ["js/voiceDim.js"],
+      "css": ["css/voiceDim.css"]
+    }
+  ],
+  "commands": {
+    "dim-listen": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+0"
+      },
+      "description": "Start/Stop listening for DIM commands"
+    }
+  },
+  "browser_action": {
+    "default_icon": "icons/icon_128.png",
+    "default_title": "Voice DIM"
+  },
+  "icons": {
+    "16": "icons/icon_16.png",
+    "32": "icons/icon_32.png",
+    "48": "icons/icon_48.png",
+    "128": "icons/icon_128.png"
+  },
+  "options_ui": {
+    "page": "html/options.html",
+    "open_in_tab": true
+  },
+  "permissions": [
+    "tabs",
+    "storage",
+    "https://www.bungie.net/Platform/Destiny2/Manifest",
+    "https://www.bungie.net/common/**",
+    "https://api.speechly.com/**"
+  ],
+  "web_accessible_resources": ["icons/icon_large.png"]
+}
