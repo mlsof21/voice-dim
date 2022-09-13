@@ -12,6 +12,6 @@
     "noEmitOnError": false,
     "jsx": "react",
     "typeRoots": ["node_modules/@types"],
-    "lib": ["ES2021.String"]
+    "lib": ["ES2021", "DOM"]
   }
 }
