@@ -3,20 +3,6 @@ export interface Action {
   timeout: number;
 }
 
-export const initAction = (options?: Partial<Action>): Action => {
-  const defaults: Action = {
-    func: () => {},
-    timeout: 0,
-  };
-
-  return {
-    ...defaults,
-    ...options,
-  };
-};
-
-export const createAction = (func: () => void, timeout: number = 0): Action => initAction({ func, timeout });
-
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(func: F, waitFor: number = 300) => {
@@ -68,7 +54,7 @@ export function retrieve(key: string): Promise<any> {
 }
 
 export interface SpeechService {
-  startSpeech: () => void;
-  stopSpeech: () => void;
+  startListening: () => void;
+  stopListening: () => void;
   recognizing: boolean;
 }
