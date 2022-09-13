@@ -107,7 +107,7 @@ const rarityQueries = {
 };
 
 const weaponSlotQueries = {
-  kinetic: 'is:kinetic',
+  kinetic: 'is:kineticslot',
   energy: 'is:energy',
   power: 'is:power',
 };
@@ -141,7 +141,9 @@ const otherQueries = {
   infusion: 'tag:infuse',
   archived: 'tag:archive',
   tagged: 'is:tagged',
+  'not tagged': '-is:tagged',
   'with notes': 'is:hasnotes',
+  'without notes': '-is:hasnotes',
 };
 
 function setSearchBar() {
