@@ -273,7 +273,7 @@ async function getItemToMove(query: string): Promise<Element | null> {
     console.log({ visibleItems });
     itemToMove = visibleItems[0];
   } else {
-    nonPerkQuery += ` ${perkQuery} -is:currentchar`;
+    nonPerkQuery += ` ${perkQuery} -is:incurrentchar`;
 
     console.log('Full query being sent to DIM: ' + nonPerkQuery);
     populateSearchBar(nonPerkQuery);
