@@ -36,11 +36,7 @@ const configs = browsers.map((browser) => {
       new CleanPlugin({ verbose: false }),
       new CopyPlugin({
         patterns: [
-          { from: './icon_16.png', to: '../icon_16.png', context: 'public' },
-          { from: './icon_32.png', to: '../icon_32.png', context: 'public' },
-          { from: './icon_48.png', to: '../icon_48.png', context: 'public' },
-          { from: './icon_128.png', to: '../icon_128.png', context: 'public' },
-          { from: './icon_large.png', to: '../icon_large.png', context: 'public' },
+          { from: 'icons/', to: '../icons/', context: 'public' },
           { from: `./manifest.${browser}.json`, to: '../manifest.json', context: 'public' },
           { from: 'html/', to: '../html/', context: 'src' },
           { from: 'css/', to: '../css/', context: 'src' },
