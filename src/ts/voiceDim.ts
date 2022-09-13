@@ -538,7 +538,7 @@ function createHelpDiv() {
   const voiceDimHelp = document.createElement('div');
   voiceDimHelp.id = 'voiceDimHelp';
   voiceDimHelp.className = 'voiceDimHelp';
-  voiceDimHelp.innerHTML = '<span class="questionMark">?</span>';
+  voiceDimHelp.innerHTML = '<a class="questionMark" href="https://www.voicedim.com/" target="_blank">?</a>';
   voiceDimHelp.addEventListener('click', showHelpModal);
   document.body.appendChild(voiceDimHelp);
 }

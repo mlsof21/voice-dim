@@ -71,6 +71,10 @@
   margin: auto;
 }
 
+a.questionMark {
+  text-decoration: none;
+}
+
 .voiceDimHelp:hover {
   cursor: pointer;
 }
