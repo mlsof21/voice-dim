@@ -1,6 +1,6 @@
 body {
   margin: auto;
-  max-width: 600px;
+  max-width: 760px;
   background-color: black;
   color: white;
   font-family: Arial, Helvetica, sans-serif;
@@ -31,11 +31,13 @@ button {
 .form-row > .action {
   flex: 1;
   font-weight: bold;
+  text-align: center;
 }
 
 .form-row > .command {
-  font-weight: bold;
   flex: 2;
+  font-weight: bold;
+  text-align: center;
 }
 
 .form-row {
@@ -46,6 +48,7 @@ button {
 .form-row > label {
   padding: 0.5em 1em 0.5em 0;
   flex: 1;
+  text-align: right;
 }
 .form-row > input {
   flex: 2;

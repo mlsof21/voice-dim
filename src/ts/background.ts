@@ -25,11 +25,27 @@ chrome.runtime.onMessage.addListener((data: { type: string; message: string }) =
   }
 });
 
-chrome.action.onClicked.addListener(async () => {
-  const [optionsTab] = await chrome.tabs.query({ url: `chrome-extension://${chrome.runtime.id}\/html\/options.html` });
-  console.log({ optionsTab });
-  if (!optionsTab) chrome.tabs.create({ url: '../html/options.html' });
-  else {
-    chrome.tabs.update(optionsTab.id!, { active: true });
-  }
-});
+if ('action' in chrome) {
+  chrome.action.onClicked.addListener(async () => {
+    const [optionsTab] = await chrome.tabs.query({
+      url: `chrome-extension://${chrome.runtime.id}\/html\/options.html`,
+    });
+    console.log({ optionsTab });
+    if (!optionsTab) chrome.tabs.create({ url: '../html/options.html' });
+    else {
+      chrome.tabs.update(optionsTab.id!, { active: true });
+    }
+  });
+} else if ('browserAction' in chrome) {
+  console.log('in browserAction');
+  chrome.browserAction.onClicked.addListener(async () => {
+    const [optionsTab] = await chrome.tabs.query({
+      url: `chrome-extension://${chrome.runtime.id}\/html\/options.html`,
+    });
+    console.log({ optionsTab });
+    if (!optionsTab) chrome.tabs.create({ url: '../html/options.html' });
+    else {
+      chrome.tabs.update(optionsTab.id!, { active: true });
+    }
+  });
+}

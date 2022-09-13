@@ -9,7 +9,7 @@
   "content_scripts": [
     {
       "matches": ["https://*.destinyitemmanager.com/*"],
-      "js": ["js/voice-dim.js"]
+      "js": ["js/voiceDim.js"]
     }
   ],
   "commands": {
@@ -21,11 +21,14 @@
     }
   },
   "browser_action": {
-    "default_icon": "icon.png",
-    "default_title": "DIM Voice"
+    "default_icon": "icon_128.png",
+    "default_title": "Voice DIM"
   },
   "icons": {
-    "128": "icon.png"
+    "16": "icon_16.png",
+    "32": "icon_32.png",
+    "48": "icon_48.png",
+    "128": "icon_128.png"
   },
   "options_ui": {
     "page": "html/options.html",
@@ -37,5 +40,11 @@
     "https://www.bungie.net/Platform/Destiny2/Manifest",
     "https://www.bungie.net/common/**",
     "https://api.speechly.com/**"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icon_large.png"],
+      "matches": ["https://*.destinyitemmanager.com/*"]
+    }
   ]
 }
