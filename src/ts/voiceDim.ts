@@ -142,8 +142,8 @@ const otherQueries = {
   archived: 'tag:archive',
   tagged: 'is:tagged',
   'not tagged': '-is:tagged',
-  'with notes': 'is:hasnotes',
-  'without notes': '-is:hasnotes',
+  'has notes': 'is:hasnotes',
+  'has no notes': '-is:hasnotes',
 };
 
 function setSearchBar() {
