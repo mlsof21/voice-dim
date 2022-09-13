@@ -511,7 +511,7 @@ function reverseMapCustomCommands(commands: any) {
 }
 
 function createMicDiv() {
-  const imageUrl = chrome.runtime.getURL('icon_large.png');
+  const imageUrl = chrome.runtime.getURL('icons/icon_large.png');
   console.log({ imageUrl });
   const voiceDimDiv = document.createElement('div');
   voiceDimDiv.id = 'voiceDim';
