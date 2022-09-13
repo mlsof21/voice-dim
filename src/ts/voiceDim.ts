@@ -135,6 +135,13 @@ const otherQueries = {
   'deep site': 'is:deepsight',
   wishlist: 'is:wishlist',
   wishlisted: 'is:wishlist',
+  favorite: 'tag:favorite',
+  keeper: 'tag:keep',
+  junk: 'tag:junk',
+  infusion: 'tag:infuse',
+  archived: 'tag:archive',
+  tagged: 'is:tagged',
+  'with notes': 'is:hasnotes',
 };
 
 function setSearchBar() {
