@@ -23,11 +23,14 @@
     }
   },
   "action": {
-    "default_icon": "icon.png",
+    "default_icon": "icon_128.png",
     "default_title": "Voice DIM"
   },
   "icons": {
-    "128": "icon.png"
+    "16": "icon_16.png",
+    "32": "icon_32.png",
+    "48": "icon_48.png",
+    "128": "icon_128.png"
   },
   "options_ui": {
     "page": "html/options.html",
@@ -37,7 +40,7 @@
   "permissions": ["tabs", "storage", "notifications"],
   "web_accessible_resources": [
     {
-      "resources": ["mic.png", "icon_large.png"],
+      "resources": ["icon_large.png"],
       "matches": ["https://*.destinyitemmanager.com/*"]
     }
   ]
