@@ -474,16 +474,20 @@ function getVisibleItems(items: NodeListOf<Element> | undefined = undefined): El
   return result;
 }
 
+function handleShortcutPress() {
+  if (!speechService.recognizing) {
+    speechService.startSpeech();
+  } else {
+    speechService.stopSpeech();
+  }
+}
+
 chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
   console.log(sender.tab ? 'from a content script:' + sender.tab.url : 'from the extension');
   console.log({ request });
   if (request.dimShortcutPressed) {
     sendResponse({ ack: 'Acknowledged.' });
-    if (!speechService.recognizing) {
-      speechService.startSpeech();
-    } else {
-      speechService.stopSpeech();
-    }
+    handleShortcutPress();
     return;
   }
   if (request === 'shortcut updated') {
@@ -530,7 +534,7 @@ function createMicDiv() {
 
   const imageDiv = document.querySelector('#voiceDim .imageContainer');
   imageDiv?.addEventListener('click', () => {
-    speechService.startSpeech();
+    handleShortcutPress();
   });
 }
 
@@ -539,12 +543,12 @@ function createHelpDiv() {
   voiceDimHelp.id = 'voiceDimHelp';
   voiceDimHelp.className = 'voiceDimHelp';
   voiceDimHelp.innerHTML = '<a class="questionMark" href="https://www.voicedim.com/" target="_blank">?</a>';
-  voiceDimHelp.addEventListener('click', showHelpModal);
+  // voiceDimHelp.addEventListener('click', showHelpModal);
   document.body.appendChild(voiceDimHelp);
 }
 
-function createHelpModal() {}
-function showHelpModal() {}
+// function createHelpModal() {}
+// function showHelpModal() {}
 
 async function $http(config: HttpClientConfig): Promise<Response> {
   return fetch(config.url, {

@@ -13,16 +13,16 @@ chrome.commands.onCommand.addListener((command: any) => {
 
 chrome.runtime.onMessage.addListener((data: { type: string; message: string }) => {
   console.log({ data });
-  if (data.type === 'notification') {
-    console.log('creating notification');
-    chrome.notifications.create({
-      type: 'basic',
-      iconUrl: '../icon.png',
-      title: 'notification title',
-      message: data.message,
-      priority: 2,
-    });
-  }
+  // if (data.type === 'notification') {
+  //   console.log('creating notification');
+  //   chrome.notifications.create({
+  //     type: 'basic',
+  //     iconUrl: '../icon.png',
+  //     title: 'notification title',
+  //     message: data.message,
+  //     priority: 2,
+  //   });
+  // }
 });
 
 if ('action' in chrome) {

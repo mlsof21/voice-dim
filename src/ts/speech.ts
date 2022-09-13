@@ -31,12 +31,18 @@ export class SpeechService implements ISpeechService {
     this.recognition.stop();
     this.recognizing = false;
 
+    const transcript = document.getElementById('transcript');
+
+    let timeout = 7000;
+    if ((<HTMLSpanElement>transcript).innerText.trim() === '') {
+      timeout = 100;
+    }
     setTimeout(() => {
       const textDiv = document.querySelector('.textContainer');
       const transcript = document.getElementById('transcript');
       (<HTMLDivElement>textDiv).style.display = 'none';
       (<HTMLSpanElement>transcript).innerText = '';
-    }, 7000);
+    }, timeout);
   }
 
   private removeMagicWord(transcript: string) {
@@ -78,7 +84,6 @@ export class SpeechService implements ISpeechService {
           parseSpeech(transcript.toLowerCase());
         }
 
-        chrome.runtime.sendMessage({ type: 'notification', message: 'testing' });
         this.stopSpeech();
       }
     };
