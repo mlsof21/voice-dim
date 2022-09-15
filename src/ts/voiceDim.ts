@@ -519,6 +519,7 @@ function reverseMapCustomCommands(commands: any) {
 function createMicDiv() {
   const imageUrl = chrome.runtime.getURL('icons/icon_large.png');
   console.log({ imageUrl });
+  const betaClass = window.location.hostname.startsWith('beta') ? 'beta' : '';
   const voiceDimDiv = document.createElement('div');
   voiceDimDiv.id = 'voiceDim';
   voiceDimDiv.innerHTML = `
@@ -526,7 +527,7 @@ function createMicDiv() {
       <div class="textContainer">
         <span id="transcript"></span>
       </div>
-      <div class="imageContainer">
+      <div class="${betaClass} imageContainer">
         <img src="${imageUrl}" />
       </div>
     </div>

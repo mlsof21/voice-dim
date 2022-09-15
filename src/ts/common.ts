@@ -53,7 +53,7 @@ export function retrieve(key: string): Promise<any> {
   });
 }
 
-export interface SpeechService {
+export interface ISpeechService {
   startListening: () => void;
   stopListening: () => void;
   recognizing: boolean;
