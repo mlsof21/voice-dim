@@ -107,7 +107,7 @@ const rarityQueries = {
 };
 
 const weaponSlotQueries = {
-  kinetic: 'is:kinetic',
+  kinetic: 'is:kineticslot',
   energy: 'is:energy',
   power: 'is:power',
 };
@@ -135,6 +135,15 @@ const otherQueries = {
   'deep site': 'is:deepsight',
   wishlist: 'is:wishlist',
   wishlisted: 'is:wishlist',
+  favorite: 'tag:favorite',
+  keeper: 'tag:keep',
+  junk: 'tag:junk',
+  infusion: 'tag:infuse',
+  archived: 'tag:archive',
+  tagged: 'is:tagged',
+  'not tagged': '-is:tagged',
+  'has notes': 'is:hasnotes',
+  'has no notes': '-is:hasnotes',
 };
 
 function setSearchBar() {
@@ -264,7 +273,7 @@ async function getItemToMove(query: string): Promise<Element | null> {
     console.log({ visibleItems });
     itemToMove = visibleItems[0];
   } else {
-    nonPerkQuery += ` ${perkQuery} -is:currentchar`;
+    nonPerkQuery += ` ${perkQuery} -is:incurrentchar`;
 
     console.log('Full query being sent to DIM: ' + nonPerkQuery);
     populateSearchBar(nonPerkQuery);
