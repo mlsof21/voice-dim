@@ -1,12 +1,12 @@
 {
   "name": "voice-dim",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Perform common DIM actions by using speech recognition.",
   "main": "dist/js/voice-dim.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "zip": "npm run build && python scripts/build.py",
-    "build": "webpack --env mode=production --config webpack.config.js",
+    "build": "rimraf dist/ && webpack --env mode=production --config webpack.config.js",
     "watch": "webpack --env mode=development --config webpack.config.js --progress --watch"
   },
   "repository": {
@@ -29,7 +29,6 @@
   },
   "homepage": "https://github.com/mlsof21/voice-dim#readme",
   "dependencies": {
-    "bungie-api-ts": "^4.18.0",
     "fuse.js": "^6.6.2"
   },
   "devDependencies": {
@@ -39,6 +38,7 @@
     "copy-webpack-plugin": "^11.0.0",
     "dotenv-webpack": "^8.0.1",
     "node-polyfill-webpack-plugin": "^2.0.1",
+    "rimraf": "^3.0.2",
     "ts-loader": "^9.3.1",
     "typescript": "^4.7.4",
     "webpack": "^5.74.0",

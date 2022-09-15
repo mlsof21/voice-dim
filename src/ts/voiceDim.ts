@@ -1,12 +1,5 @@
-import { HttpClientConfig } from 'bungie-api-ts/core';
-import {
-  DestinyManifest,
-  DestinyManifestSlice,
-  getDestinyManifest,
-  getDestinyManifestSlice,
-} from 'bungie-api-ts/destiny2';
 import Fuse from 'fuse.js';
-import { Action, createAction, initAction, retrieve, sleep } from './common';
+import { retrieve, sleep } from './common';
 import { SpeechService } from './speech';
 
 const origConsoleLog = console.log;
@@ -485,9 +478,9 @@ function getVisibleItems(items: NodeListOf<Element> | undefined = undefined): El
 
 function handleShortcutPress() {
   if (!speechService.recognizing) {
-    speechService.startSpeech();
+    speechService.startListening();
   } else {
-    speechService.stopSpeech();
+    speechService.stopListening();
   }
 }
 
@@ -526,6 +519,7 @@ function reverseMapCustomCommands(commands: any) {
 function createMicDiv() {
   const imageUrl = chrome.runtime.getURL('icons/icon_large.png');
   console.log({ imageUrl });
+  const betaClass = window.location.hostname.startsWith('beta') ? 'beta' : '';
   const voiceDimDiv = document.createElement('div');
   voiceDimDiv.id = 'voiceDim';
   voiceDimDiv.innerHTML = `
@@ -533,7 +527,7 @@ function createMicDiv() {
       <div class="textContainer">
         <span id="transcript"></span>
       </div>
-      <div class="imageContainer">
+      <div class="${betaClass} imageContainer">
         <img src="${imageUrl}" />
       </div>
     </div>
@@ -552,95 +546,27 @@ function createHelpDiv() {
   voiceDimHelp.id = 'voiceDimHelp';
   voiceDimHelp.className = 'voiceDimHelp';
   voiceDimHelp.innerHTML = '<a class="questionMark" href="https://www.voicedim.com/" target="_blank">?</a>';
-  // voiceDimHelp.addEventListener('click', showHelpModal);
   document.body.appendChild(voiceDimHelp);
 }
 
 // function createHelpModal() {}
 // function showHelpModal() {}
 
-async function $http(config: HttpClientConfig): Promise<Response> {
-  return fetch(config.url, {
-    method: config.method,
-    body: config.body,
-  }).then((res) => res.json());
-}
-
-async function getManifest(): Promise<DestinyManifest> {
-  const response = await getDestinyManifest($http);
-  return response.Response;
-}
-
-async function getDestinyInventoryItemManifest(): Promise<DestinyManifestSlice<['DestinyInventoryItemDefinition']>> {
-  const manifest = await getManifest();
-  const manifestSlice = await getDestinyManifestSlice($http, {
-    destinyManifest: manifest,
-    language: 'en',
-    tableNames: ['DestinyInventoryItemDefinition'],
-  });
-  return manifestSlice;
-}
-
 async function getPerks() {
-  const inventoryItemManifest = await getDestinyInventoryItemManifest();
-  createMaps(inventoryItemManifest);
-}
-
-function createMaps(manifest: DestinyManifestSlice<['DestinyInventoryItemDefinition']>) {
-  const validPlugs = [
-    'barrels',
-    'batteries',
-    'frames',
-    'guards',
-    'magazines',
-    'magazines_gl',
-    'stocks',
-    'tubes',
-    'grips',
-    'scopes',
-    'origins',
-    'intrinsics',
-  ];
-  const foundPerks = [];
-
-  for (const hash in manifest.DestinyInventoryItemDefinition) {
-    const item = manifest.DestinyInventoryItemDefinition[hash];
-    // Only map perks
-    if (item && item.itemType === 19) {
-      const plugCategoryIdentifier = item.plug?.plugCategoryIdentifier ?? '';
-      if (validPlugs.includes(plugCategoryIdentifier) && item.displayProperties.name !== '') {
-        foundPerks.push(item.displayProperties.name.toLowerCase());
-      }
-    }
-  }
-  knownPerks = [...new Set(foundPerks.sort())];
+  const response = await fetch(
+    'https://raw.githubusercontent.com/DestinyItemManager/d2ai-module/master/voice-dim-valid-perks.json'
+  );
+  knownPerks = await response.json();
   console.log({ knownPerks });
 }
 
-getPerks();
-getCustomCommands();
+function init() {
+  getPerks();
+  getCustomCommands();
+  createMicDiv();
+  createHelpDiv();
+}
 
-let observer = new MutationObserver((mutations) => {
-  mutations.forEach((mutation) => {
-    if (!mutation.addedNodes) return;
-
-    for (let i = 0; i < mutation.addedNodes.length; i++) {
-      const node = <Element>mutation.addedNodes[i];
-      if (node.className && node.className.toLowerCase() == 'search-link') {
-        createMicDiv();
-        createHelpDiv();
-        observer.disconnect();
-        break;
-      }
-    }
-  });
-});
-
-observer.observe(document.body, {
-  childList: true,
-  subtree: true,
-  attributes: false,
-  characterData: false,
-});
+init();
 
 const speechService = new SpeechService();

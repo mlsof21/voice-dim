@@ -1,4 +1,4 @@
-import { SpeechService as ISpeechService } from './common';
+import { ISpeechService } from './common';
 import { parseSpeech } from './voiceDim';
 
 const dimWords = ['dim', 'damn', 'then', 'them'];
@@ -8,7 +8,7 @@ const { webkitSpeechRecognition } = window as any;
 var SpeechRecognition = window.SpeechRecognition || webkitSpeechRecognition;
 
 export class SpeechService implements ISpeechService {
-  startSpeech() {
+  startListening() {
     this.recognizing = true;
     const imageDiv = document.querySelector('.imageContainer');
     const textDiv = document.querySelector('.textContainer');
@@ -23,7 +23,7 @@ export class SpeechService implements ISpeechService {
     } catch (e) {}
   }
 
-  stopSpeech() {
+  stopListening() {
     console.log('stopping speech recognition');
     const imageDiv = document.querySelector('.imageContainer');
     imageDiv?.classList.remove('pulse');
@@ -68,7 +68,7 @@ export class SpeechService implements ISpeechService {
 
     this.recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
       console.error('Error with speech recognition:', e);
-      this.stopSpeech();
+      this.stopListening();
     };
 
     this.recognition.onresult = (e: SpeechRecognitionEvent) => {
@@ -84,14 +84,14 @@ export class SpeechService implements ISpeechService {
           parseSpeech(transcript.toLowerCase());
         }
 
-        this.stopSpeech();
+        this.stopListening();
       }
     };
 
     // called when we detect silence
     this.recognition.onspeechend = () => {
       if (this.recognizing) {
-        this.stopSpeech();
+        this.stopListening();
       }
     };
   }

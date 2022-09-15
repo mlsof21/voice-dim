@@ -2,7 +2,6 @@ const path = require('path');
 const dotenv = require('dotenv-webpack');
 const CopyPlugin = require('copy-webpack-plugin');
 const { CleanPlugin } = require('webpack');
-const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 const srcDir = path.join(__dirname, 'src', 'ts');
 
 const browsers = ['chrome', 'firefox'];
@@ -43,14 +42,12 @@ const configs = browsers.map((browser) => {
         ],
       }),
       new dotenv(),
-      new NodePolyfillPlugin(),
     ],
     devtool: 'inline-source-map',
   };
 });
 
 module.exports = (env) => {
-  console.log({ configs });
   return configs.map((config) => {
     return { ...config, mode: env.mode };
   });

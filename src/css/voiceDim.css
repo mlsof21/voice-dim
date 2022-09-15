@@ -35,6 +35,10 @@
   padding: 5px;
 }
 
+.beta.imageContainer img {
+  filter: hue-rotate(160deg) brightness(107%)
+}
+
 .pulse {
   animation: pulse 3s infinite;
   animation-direction: alternate;
