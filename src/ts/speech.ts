@@ -76,14 +76,8 @@ export class SpeechService implements ISpeechService {
       (<HTMLSpanElement>transcriptSpan).innerText = e.results[0][0].transcript;
       if (e.results[0].isFinal) {
         var transcript = e.results[0][0].transcript.toLowerCase();
-        console.log({ transcript });
-        if (dimWords.some((word) => transcript.startsWith(word))) {
-          parseSpeech(this.removeMagicWord(transcript));
-        } else {
-          console.log('no magic word, understood ', transcript);
-          parseSpeech(transcript.toLowerCase());
-        }
-
+        console.log(`Understood "${transcript}" with ${e.results[0][0].confidence} confidence`);
+        parseSpeech(this.removeMagicWord(transcript.toLowerCase()));
         this.stopListening();
       }
     };

@@ -9,7 +9,8 @@
 
     <p>
       Enter your own custom voice commands for each of the actions below. If you want multiple voice commands to perform
-      the same action, separate the commands with a comma (ex. for <code>Transfer weapon</code>: transfer, get)
+      the same action, separate the commands with a comma (ex. for <code>Transfer item (not equip)</code>: transfer,
+      transmat). Try not to use similar sounding words for different commands.
     </p>
     <ul class="wrapper">
       <li class="form-row"><span class="action">Action</span><span class="command">Voice Command</span></li>
@@ -17,7 +18,7 @@
         <label for="transfer">Transfer item (not equip): </label><input id="transfer" type="text" />
       </li>
       <li class="form-row"><label for="equip">Equip item: </label><input id="equip" type="text" /></li>
-      <li class="form-row"><label for="store">Move item to vault: </label><input id="store" type="text" /></li>
+      <li class="form-row"><label for="store">Store item in vault: </label><input id="store" type="text" /></li>
       <li class="form-row"><label for="loadout">Equip loadout: </label><input id="loadout" type="text" /></li>
       <li class="form-row"><label for="maxPower">Equip max power: </label><input id="maxPower" type="text" /></li>
       <li class="form-row">
@@ -30,6 +31,7 @@
         <label for="stopFarming">Stop farming mode: </label><input id="stopFarming" type="text" />
       </li>
     </ul>
+    <span class="saveText"></span>
     <script type="text/javascript" src="../js/options.js"></script>
   </body>
 </html>

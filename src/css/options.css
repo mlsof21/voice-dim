@@ -72,3 +72,9 @@ input[type='text']:focus {
   border-right: none;
   border-bottom: 1px solid white;
 }
+
+.saveText {
+  color:white;
+  display: none;
+  text-align: center;
+}
