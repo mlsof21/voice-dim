@@ -1,8 +1,8 @@
 const path = require('path');
-const dotenv = require('dotenv-webpack');
 const CopyPlugin = require('copy-webpack-plugin');
 const { CleanPlugin } = require('webpack');
 const srcDir = path.join(__dirname, 'src', 'ts');
+const Visualizer = require('webpack-visualizer-plugin2');
 
 const browsers = ['chrome', 'firefox'];
 
@@ -41,14 +41,22 @@ const configs = browsers.map((browser) => {
           { from: 'css/', to: '../css/', context: 'src' },
         ],
       }),
-      new dotenv(),
     ],
-    devtool: 'inline-source-map',
   };
 });
 
 module.exports = (env) => {
+  if (env.mode !== 'production') {
+    configs.forEach((config) => {
+      config.plugins.push(new Visualizer({ filename: path.join('..', 'stats', 'stats.html') }));
+    });
+  }
+
   return configs.map((config) => {
-    return { ...config, mode: env.mode };
+    return {
+      ...config,
+      mode: env.mode,
+      devtool: env.mode === 'production' ? 'source-map' : 'inline-source-map',
+    };
   });
 };

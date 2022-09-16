@@ -17,14 +17,14 @@ export class SpeechService implements ISpeechService {
     (<HTMLDivElement>textDiv).style.display = 'flex';
     try {
       // calling it twice will throw...
-      console.log('starting speech recognition');
+      console.log('started listening');
       imageDiv?.classList.add('pulse');
       this.recognition.start();
     } catch (e) {}
   }
 
   stopListening() {
-    console.log('stopping speech recognition');
+    console.log('stopping listening');
     const imageDiv = document.querySelector('.imageContainer');
     imageDiv?.classList.remove('pulse');
 
@@ -47,19 +47,17 @@ export class SpeechService implements ISpeechService {
 
   private removeMagicWord(transcript: string) {
     for (const word of dimWords) {
-      console.log('checking transcript for', word);
       if (transcript.startsWith(word)) {
         transcript = transcript.replace(word, '');
         break;
       }
     }
-    console.log('returning transcript:', transcript);
     return transcript;
   }
 
   recognition: SpeechRecognition = new SpeechRecognition();
   recognizing: boolean = false;
-
+  actions: Array<{ action: string; duration: number }> = [];
   constructor() {
     this.recognition.lang = 'en-US';
     this.recognition.interimResults = true;
@@ -71,13 +69,23 @@ export class SpeechService implements ISpeechService {
       this.stopListening();
     };
 
-    this.recognition.onresult = (e: SpeechRecognitionEvent) => {
+    this.recognition.onresult = async (e: SpeechRecognitionEvent) => {
       const transcriptSpan = document.getElementById('transcript');
       (<HTMLSpanElement>transcriptSpan).innerText = e.results[0][0].transcript;
       if (e.results[0].isFinal) {
+        const now = Date.now();
         var transcript = e.results[0][0].transcript.toLowerCase();
-        console.log(`Understood "${transcript}" with ${e.results[0][0].confidence} confidence`);
-        parseSpeech(this.removeMagicWord(transcript.toLowerCase()));
+        console.log(`heard "${transcript}" with ${e.results[0][0].confidence} confidence`);
+
+        await parseSpeech(this.removeMagicWord(transcript.toLowerCase()));
+
+        const duration = Date.now() - now;
+        this.actions.unshift({ action: transcript.toLowerCase(), duration });
+        if (this.actions.length > 10) {
+          this.actions.splice(10, 1);
+        }
+        console.log('Actions', this.actions);
+
         this.stopListening();
       }
     };
