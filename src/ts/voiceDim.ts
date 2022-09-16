@@ -175,7 +175,6 @@ const potentialActions: ActionFunction = {
 };
 
 export async function parseSpeech(this: any, transcript: string) {
-  console.log('parsing', transcript);
   let query = transcript.trim();
   const closestMatch = getClosestMatch(Object.keys(mappedCommands), query);
 
@@ -249,7 +248,6 @@ async function getItemToMove(query: string): Promise<Element | null> {
   const perkQuery = splitQuery.length > 1 && splitQuery[1] !== '' ? getPerkQuery(splitQuery[1]) : '';
 
   if (nonPerkQuery === '') {
-    console.log('looking for', query);
     if (perkQuery !== '') {
       await populateSearchBar(perkQuery, true);
     }
@@ -257,15 +255,11 @@ async function getItemToMove(query: string): Promise<Element | null> {
     const itemToGet = getClosestMatch(Object.keys(availableItems), splitQuery[0]);
     await populateSearchBar(`name:"${itemToGet?.match}"`);
     const visibleItems = getVisibleItems();
-    console.log({ visibleItems });
     itemToMove = visibleItems[0];
   } else {
     nonPerkQuery += ` ${perkQuery} -is:incurrentchar`;
-
-    console.log('Full query being sent to DIM: ' + nonPerkQuery);
     await populateSearchBar(nonPerkQuery);
     const filteredItems = getVisibleItems();
-    console.log(filteredItems);
     if (filteredItems.length > 0) {
       itemToMove = filteredItems[0];
     }
@@ -274,12 +268,9 @@ async function getItemToMove(query: string): Promise<Element | null> {
 }
 
 async function transferItem(item: Element) {
-  console.log('Transferring');
-
   item.dispatchEvent(uiEvents.singleClick);
   const currentClass = getCurrentCharacterClass();
   const storeDiv = await waitForElementToDisplay(`[title^="Store"] [data-icon*="${currentClass}"]`);
-  console.log({ element: storeDiv });
   storeDiv?.dispatchEvent(uiEvents.singleClick);
 }
 
@@ -348,12 +339,10 @@ async function openCurrentCharacterLoadoutMenu() {
 
 async function handleEquipLoadout(loadoutName: string) {
   console.log('Equipping loadout', loadoutName);
-  if (loadoutName.includes('equip loadout') || loadoutName.includes('equip load out'))
-    loadoutName = loadoutName.replace('equip loadout', '').replace('equip load out', '');
   await openCurrentCharacterLoadoutMenu();
   const availableLoadoutNames = getLoadoutNames();
   const loadoutToEquip = getClosestMatch(availableLoadoutNames, loadoutName);
-  const loadoutToEquipSpan = document.querySelector(`.loadout-menu span[title="${loadoutToEquip}"]`);
+  const loadoutToEquipSpan = document.querySelector(`.loadout-menu span[title="${loadoutToEquip?.match}"]`);
   loadoutToEquipSpan?.dispatchEvent(uiEvents.singleClick);
 }
 
@@ -411,8 +400,6 @@ function getClosestMatch(availableItems: string[], query: string): FuseMatch | n
     includeScore: true,
     shouldSort: true,
   };
-  console.log({ availableItems });
-
   const fuse = new Fuse(availableItems, options);
   const result = fuse.search(query);
   console.log({ result, query });
@@ -440,12 +427,12 @@ function isAcceptableResult(result: Fuse.FuseResult<string>[]): boolean {
 }
 
 async function populateSearchBar(searchInput: string, clearFirst: boolean = false): Promise<void> {
-  console.log('Populating search bar with', searchInput);
   if (!searchBar) searchBar = <HTMLInputElement>document.getElementsByName('filter')[0];
   if (searchBar) {
     const count = getVisibleItems().length;
     if (clearFirst) clearSearchBar();
     searchBar.value += ' ' + searchInput;
+    console.log('Populating search bar with', searchBar.value);
     searchBar?.dispatchEvent(uiEvents.input);
     await sleep(50);
     searchBar?.focus();
@@ -456,7 +443,7 @@ async function populateSearchBar(searchInput: string, clearFirst: boolean = fals
 }
 
 function clearSearchBar() {
-  console.log('Clearing search bar');
+  console.log('Clearing search');
   const clearButton = document.querySelector('.filter-bar-button[title^=Clear]');
   clearButton?.dispatchEvent(uiEvents.singleClick);
 }
@@ -470,7 +457,6 @@ function handleShortcutPress() {
 }
 
 chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
-  console.log(sender.tab ? 'from a content script:' + sender.tab.url : 'from the extension');
   console.log({ request });
   if (request.dimShortcutPressed) {
     sendResponse({ ack: 'Acknowledged.' });
@@ -503,7 +489,6 @@ function reverseMapCustomCommands(commands: any) {
 
 function createMicDiv() {
   const imageUrl = chrome.runtime.getURL('icons/icon_large.png');
-  console.log({ imageUrl });
   const betaClass = window.location.hostname.startsWith('beta') ? 'beta' : '';
   const voiceDimDiv = document.createElement('div');
   voiceDimDiv.id = 'voiceDim';

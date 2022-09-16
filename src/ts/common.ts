@@ -25,7 +25,6 @@ export function waitForSearchToUpdate(
     var startTimeInMs = Date.now();
     (function loopSearch() {
       const count = getVisibleItems();
-      console.log('[waitForSearchToUpdate]', initialCount, count.length);
       if (count.length < initialCount) {
         clearTimeout();
         return resolve();
@@ -46,7 +45,7 @@ export function getVisibleItems(items: NodeListOf<Element> | undefined = undefin
   return result;
 }
 
-export function waitForElementToDisplay(
+export async function waitForElementToDisplay(
   selector: string,
   checkFrequencyInMs: number = 50,
   timeoutInMs: number = 2000
@@ -58,7 +57,10 @@ export function waitForElementToDisplay(
         return resolve(document.querySelector(selector));
       } else {
         setTimeout(function () {
-          if (timeoutInMs && Date.now() - startTimeInMs > timeoutInMs) return;
+          if (timeoutInMs && Date.now() - startTimeInMs > timeoutInMs) {
+            console.log("couldn't find", selector);
+            return;
+          }
           loopSearch();
         }, checkFrequencyInMs);
       }

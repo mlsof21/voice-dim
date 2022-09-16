@@ -5,7 +5,6 @@ function onChange() {
   Object.keys(DEFAULT_COMMANDS).forEach((command) => {
     commands[command] = getTextValueById(command);
   });
-  console.log({ commands });
   store('commands', commands);
 
   updateSaveText(true, 'Saved!');
@@ -45,7 +44,6 @@ async function onLoad() {
 }
 
 window.onload = function () {
-  console.log('loaded');
   onLoad();
   const inputs = document.querySelectorAll('input');
   inputs.forEach((input) => {
