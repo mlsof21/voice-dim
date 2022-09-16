@@ -81,6 +81,9 @@ export class SpeechService implements ISpeechService {
 
         const duration = Date.now() - now;
         this.actions.unshift({ action: transcript.toLowerCase(), duration });
+        if (this.actions.length > 10) {
+          this.actions.splice(10, 1);
+        }
         console.log('Actions', this.actions);
 
         this.stopListening();
