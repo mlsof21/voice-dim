@@ -2,17 +2,17 @@ name: Create Release
 
 on:
   push:
-    branches: [ trying-action ]
+    branches: [trying-action]
   # pull_request:
   #   branches: [ master ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest   
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        
+
       - name: Zip code
         uses: actions/setup-node@v3
       - run: |
@@ -24,6 +24,8 @@ jobs:
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
           tag_name: ${{ steps.package-version.outputs.current-version }}
           release_name: v${{ steps.package-version.outputs.current-version }}
@@ -32,6 +34,8 @@ jobs:
       - name: Upload release asset
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./build/voice-dim-chrome.${{ steps.package-version.outputs.current-version }}.zip
