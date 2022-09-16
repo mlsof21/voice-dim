@@ -1,5 +1,5 @@
 import Fuse from 'fuse.js';
-import { retrieve, sleep } from './common';
+import { getVisibleItems, retrieve, sleep, waitForElementToDisplay, waitForSearchToUpdate } from './common';
 import { SpeechService } from './speech';
 
 const origConsoleLog = console.log;
@@ -174,7 +174,7 @@ const potentialActions: ActionFunction = {
   postmaster: handleCollectPostmaster,
 };
 
-export function parseSpeech(this: any, transcript: string) {
+export async function parseSpeech(this: any, transcript: string) {
   console.log('parsing', transcript);
   let query = transcript.trim();
   const closestMatch = getClosestMatch(Object.keys(mappedCommands), query);
@@ -183,31 +183,27 @@ export function parseSpeech(this: any, transcript: string) {
     console.log("Couldn't determine correct action");
     return;
   }
-  const closestAction = getClosestMatch(Object.keys(potentialActions), mappedCommands[closestMatch]);
+  const closestAction = getClosestMatch(Object.keys(potentialActions), mappedCommands[closestMatch.match]);
   if (!closestAction) {
     console.log("Couldn't determine correct action");
     return;
   }
   console.log({ closestAction });
 
-  query = query.replace(closestMatch, '').trim();
-  potentialActions[closestAction].call(this, query, closestAction);
+  query = query.replace(closestMatch.toReplace, '').trim();
+  await potentialActions[closestAction.match].call(this, query, closestAction.match);
 }
 
 async function handleStoreItem(query: string) {
-  populateSearchBar('is:incurrentchar');
-  await sleep(2000);
+  await populateSearchBar('is:incurrentchar');
   const availableItems = getAllTransferableItems();
   const itemToStore = getClosestMatch(Object.keys(availableItems), query);
   if (!itemToStore) return;
-  populateSearchBar(`name:"${itemToStore}"`);
-  await sleep(2000);
-  const itemDiv = availableItems[itemToStore];
+  await populateSearchBar(`name:"${itemToStore.match}"`);
+  const itemDiv = availableItems[itemToStore.match];
   itemDiv?.dispatchEvent(uiEvents.singleClick);
-  await sleep(200);
-  const vaultDiv = document.querySelector('.item-popup [title^="Vault"]');
+  const vaultDiv = await waitForElementToDisplay('.item-popup [title^="Vault"]');
   vaultDiv?.dispatchEvent(uiEvents.singleClick);
-  sleep(500);
   clearSearchBar();
 }
 
@@ -255,13 +251,11 @@ async function getItemToMove(query: string): Promise<Element | null> {
   if (nonPerkQuery === '') {
     console.log('looking for', query);
     if (perkQuery !== '') {
-      populateSearchBar(perkQuery, true);
-      await sleep(2000);
+      await populateSearchBar(perkQuery, true);
     }
     const availableItems = getAllTransferableItems();
     const itemToGet = getClosestMatch(Object.keys(availableItems), splitQuery[0]);
-    populateSearchBar(`name:"${itemToGet}"`);
-    await sleep(2000);
+    await populateSearchBar(`name:"${itemToGet?.match}"`);
     const visibleItems = getVisibleItems();
     console.log({ visibleItems });
     itemToMove = visibleItems[0];
@@ -269,8 +263,7 @@ async function getItemToMove(query: string): Promise<Element | null> {
     nonPerkQuery += ` ${perkQuery} -is:incurrentchar`;
 
     console.log('Full query being sent to DIM: ' + nonPerkQuery);
-    populateSearchBar(nonPerkQuery);
-    await sleep(2000);
+    await populateSearchBar(nonPerkQuery);
     const filteredItems = getVisibleItems();
     console.log(filteredItems);
     if (filteredItems.length > 0) {
@@ -280,20 +273,13 @@ async function getItemToMove(query: string): Promise<Element | null> {
   return itemToMove;
 }
 
-async function storeItem(item: Element) {
-  item?.dispatchEvent(uiEvents.singleClick);
-  await sleep(200);
-  const vaultDiv = document.querySelector('.item-popup [title^="Vault"]');
-  vaultDiv?.dispatchEvent(uiEvents.singleClick);
-}
-
 async function transferItem(item: Element) {
   console.log('Transferring');
 
   item.dispatchEvent(uiEvents.singleClick);
-  await sleep(200);
   const currentClass = getCurrentCharacterClass();
-  const storeDiv = document.querySelector(`[title^="Store"] [data-icon*="${currentClass}"]`);
+  const storeDiv = await waitForElementToDisplay(`[title^="Store"] [data-icon*="${currentClass}"]`);
+  console.log({ element: storeDiv });
   storeDiv?.dispatchEvent(uiEvents.singleClick);
 }
 
@@ -330,7 +316,7 @@ function getPerkQuery(query: string) {
   const perkNames = [];
   for (const perkName of splitPerkNames) {
     const closestPerk = getClosestMatch(knownPerks, perkName);
-    if (closestPerk && closestPerk !== '') perkNames.push(`perkname:"${closestPerk}"`);
+    if (closestPerk && closestPerk.match !== '') perkNames.push(`perkname:"${closestPerk}"`);
   }
   perkQuery = perkNames.join(' ');
   return perkQuery;
@@ -357,7 +343,7 @@ async function handleEquipMaxPower() {
 async function openCurrentCharacterLoadoutMenu() {
   const currentCharacter = document.querySelector('.character.current');
   currentCharacter?.dispatchEvent(uiEvents.singleClick);
-  await sleep(500);
+  await waitForElementToDisplay('.loadout-menu');
 }
 
 async function handleEquipLoadout(loadoutName: string) {
@@ -415,7 +401,12 @@ function getAllTransferableItems(): Record<string, Element> {
   return items;
 }
 
-function getClosestMatch(availableItems: string[], query: string): string | null {
+type FuseMatch = {
+  toReplace: string;
+  match: string;
+};
+
+function getClosestMatch(availableItems: string[], query: string): FuseMatch | null {
   const options = {
     includeScore: true,
     shouldSort: true,
@@ -427,7 +418,7 @@ function getClosestMatch(availableItems: string[], query: string): string | null
   console.log({ result, query });
 
   if (isAcceptableResult(result)) {
-    return result[0].item;
+    return { toReplace: query, match: result[0].item };
   }
 
   console.log("Couldn't find a match. Trying to find match by splitting the current query.");
@@ -436,7 +427,9 @@ function getClosestMatch(availableItems: string[], query: string): string | null
   for (const split of splitQuery) {
     const splitResult = fuse.search(split);
     console.log({ splitResult, split });
-    return isAcceptableResult(splitResult) ? splitResult[0].item : '';
+    return isAcceptableResult(splitResult)
+      ? { toReplace: split, match: splitResult[0].item }
+      : { toReplace: '', match: '' };
   }
 
   return null;
@@ -450,12 +443,15 @@ async function populateSearchBar(searchInput: string, clearFirst: boolean = fals
   console.log('Populating search bar with', searchInput);
   if (!searchBar) searchBar = <HTMLInputElement>document.getElementsByName('filter')[0];
   if (searchBar) {
+    const count = getVisibleItems().length;
     if (clearFirst) clearSearchBar();
     searchBar.value += ' ' + searchInput;
     searchBar?.dispatchEvent(uiEvents.input);
-    await sleep(200);
+    await sleep(50);
     searchBar?.focus();
     searchBar?.dispatchEvent(uiEvents.enter);
+
+    await waitForSearchToUpdate(count);
   }
 }
 
@@ -463,17 +459,6 @@ function clearSearchBar() {
   console.log('Clearing search bar');
   const clearButton = document.querySelector('.filter-bar-button[title^=Clear]');
   clearButton?.dispatchEvent(uiEvents.singleClick);
-}
-
-function getVisibleItems(items: NodeListOf<Element> | undefined = undefined): Element[] {
-  if (!items) items = document.querySelectorAll('div.item');
-  const result: Element[] = [];
-  items.forEach((x) => {
-    if (parseFloat(window.getComputedStyle(x, null).opacity) > 0.2) {
-      result.push(x);
-    }
-  });
-  return result;
 }
 
 function handleShortcutPress() {

@@ -71,13 +71,15 @@ export class SpeechService implements ISpeechService {
       this.stopListening();
     };
 
-    this.recognition.onresult = (e: SpeechRecognitionEvent) => {
+    this.recognition.onresult = async (e: SpeechRecognitionEvent) => {
       const transcriptSpan = document.getElementById('transcript');
       (<HTMLSpanElement>transcriptSpan).innerText = e.results[0][0].transcript;
       if (e.results[0].isFinal) {
+        const now = Date.now();
         var transcript = e.results[0][0].transcript.toLowerCase();
         console.log(`Understood "${transcript}" with ${e.results[0][0].confidence} confidence`);
-        parseSpeech(this.removeMagicWord(transcript.toLowerCase()));
+        await parseSpeech(this.removeMagicWord(transcript.toLowerCase()));
+        console.log('Action took', Date.now() - now, 'ms');
         this.stopListening();
       }
     };
