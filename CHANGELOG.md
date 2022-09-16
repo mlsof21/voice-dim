@@ -1,4 +1,9 @@
-### 1.1.0 - 2022-09-14 - The One with Custom Commands
+### 1.1.1 - 2022-09-16 - Better performance
+
+- Use a `waitForElement/waitForSearchToUpdate` function instead of arbitrarily sleeping in code
+  - Results in at least a 300% improvement in action duration
+
+### 1.1.0 - 2022-09-13 - The One with Custom Commands
 
 - Quite a few changes in this one
 - Reworked how the extension waits for the search to update visible (not dimmed) items
