@@ -15,7 +15,7 @@ jobs:
         
       - name: Zip code
         uses: actions/setup-node@v3
-        run: |
+      - run: |
           npm install
           npm run zip
       - name: Get release version
