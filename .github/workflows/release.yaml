@@ -43,7 +43,7 @@ jobs:
           asset_content_type: application/zip
       - name: Publish to Chrome Webstore
         id: chrome-webstore-publish
-        uses: Klemensas/chrome-extension-upload-action@$VERSION
+        uses: Klemensas/chrome-extension-upload-action@master
         with:
           refresh-token: ${{ secrets.REFRESH_TOKEN }}
           client-id: ${{ secrets.CLIENT_ID }}
