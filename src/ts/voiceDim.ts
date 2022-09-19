@@ -197,8 +197,11 @@ async function handleStoreItem(query: string) {
   await populateSearchBar('is:incurrentchar');
   const availableItems = getAllTransferableItems();
   const itemToStore = getClosestMatch(Object.keys(availableItems), query);
-  if (!itemToStore) return;
-  await populateSearchBar(`name:"${itemToStore.match}"`);
+  if (!itemToStore || (itemToStore && itemToStore.match === '')) {
+    clearSearchBar();
+    return;
+  }
+  await populateSearchBar(`name:"${itemToStore?.match}"`);
   const itemDiv = availableItems[itemToStore.match];
   itemDiv?.dispatchEvent(uiEvents.singleClick);
   const vaultDiv = await waitForElementToDisplay('.item-popup [title^="Vault"]');
@@ -228,7 +231,7 @@ async function handleItemMovement(query: string, action: string): Promise<void> 
 
   switch (action) {
     case 'transfer':
-      transferItem(itemToMove);
+      await transferItem(itemToMove);
       break;
     case 'equip':
       equipItem(itemToMove);
@@ -236,7 +239,6 @@ async function handleItemMovement(query: string, action: string): Promise<void> 
     default:
       break;
   }
-  sleep(1000);
   clearSearchBar();
 }
 
@@ -515,7 +517,9 @@ function createHelpDiv() {
   const voiceDimHelp = document.createElement('div');
   voiceDimHelp.id = 'voiceDimHelp';
   voiceDimHelp.className = 'voiceDimHelp';
-  voiceDimHelp.innerHTML = '<a class="questionMark" href="https://www.voicedim.com/" target="_blank">?</a>';
+  voiceDimHelp.innerHTML = `<span class="questionMark">?</span>`;
+  voiceDimHelp.addEventListener('click', () => chrome.runtime.sendMessage('showOptions'));
+
   document.body.appendChild(voiceDimHelp);
 }
 

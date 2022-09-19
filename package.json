@@ -1,8 +1,8 @@
 {
   "name": "voice-dim",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Perform common DIM actions by using speech recognition.",
-  "main": "dist/js/voice-dim.js",
+  "main": "dist/chrome/js/voice-dim.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "zip": "npm run build && python scripts/build.py",
