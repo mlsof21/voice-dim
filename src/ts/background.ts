@@ -18,6 +18,10 @@ chrome.runtime.onMessage.addListener((data: any) => {
   }
 });
 
+chrome.runtime.onInstalled.addListener(() => {
+  openOptionsPage();
+});
+
 async function openOptionsPage() {
   const [optionsTab] = await chrome.tabs.query({
     url: `chrome-extension://${chrome.runtime.id}\/html\/options.html`,

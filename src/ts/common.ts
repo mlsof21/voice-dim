@@ -40,8 +40,8 @@ export function waitForSearchToUpdate(
 
 export function getVisibleItems(items: NodeListOf<Element> | undefined = undefined): Element[] {
   if (!items) items = document.querySelectorAll('div.item');
-  const result: Element[] = Array.from(items).filter((item) => !item.className.includes('searchHidden'));
-
+  // const result: Element[] = Array.from(items).filter((item) => !item.className.includes('searchHidden'));
+  const result = Array.from(items).filter((item) => parseFloat(window.getComputedStyle(item).opacity) > 0.5);
   return result;
 }
 
