@@ -1,5 +1,12 @@
 import Fuse from 'fuse.js';
-import { getVisibleItems, retrieve, sleep, waitForElementToDisplay, waitForSearchToUpdate } from './common';
+import {
+  DEFAULT_COMMANDS,
+  getVisibleItems,
+  retrieve,
+  sleep,
+  waitForElementToDisplay,
+  waitForSearchToUpdate,
+} from './common';
 import { SpeechService } from './speech';
 
 const origConsoleLog = console.log;
@@ -473,7 +480,7 @@ chrome.runtime.onMessage.addListener(async function (request, sender, sendRespon
 });
 
 async function getCustomCommands() {
-  const commands = await retrieve('commands');
+  const commands = await retrieve('commands', DEFAULT_COMMANDS);
   mappedCommands = reverseMapCustomCommands(commands);
   console.log({ commands, mappedCommands });
 }

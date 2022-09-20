@@ -1,6 +1,6 @@
 import { debounce, DEFAULT_COMMANDS, retrieve, sleep, store } from './common';
 
-function onChange() {
+function onCommandChange() {
   const commands: Record<string, string[]> = {};
   Object.keys(DEFAULT_COMMANDS).forEach((command) => {
     commands[command] = getTextValueById(command);
@@ -19,6 +19,10 @@ function onChange() {
   });
 }
 
+function onAlwaysListeningChange(alwaysListening: boolean, activationPhrase: string) {
+  store('alwaysListening', { alwaysListening, activationPhrase });
+}
+
 function updateSaveText(show: boolean, text: string = '') {
   const saveSpan = <HTMLSpanElement>document.querySelector('.saveText');
   saveSpan.innerText = text;
@@ -35,18 +39,44 @@ function getTextValueById(id: string): string[] {
 }
 
 async function onLoad() {
-  const commands: Record<string, string[]> = await retrieve('commands');
+  const commands: Record<string, string[]> = await retrieve('commands', DEFAULT_COMMANDS);
   Object.keys(commands).forEach((command) => {
     (<HTMLInputElement>document.getElementById(command)).value = (commands[command] ?? DEFAULT_COMMANDS[command]).join(
       ','
     );
   });
+
+  const alwaysListening: { alwaysListening: boolean; activationPhrase: string } = await retrieve('alwaysListening', {
+    alwaysListening: false,
+    activationPhrase: 'ok dim',
+  });
+  const listeningCheckbox = <HTMLInputElement>document.getElementById('alwaysListeningToggle');
+  listeningCheckbox.checked = alwaysListening.alwaysListening;
+  toggleAlwaysListeningSection(alwaysListening.alwaysListening);
+  const activationPhrase = <HTMLInputElement>document.getElementById('activationPhrase');
+  activationPhrase.value = alwaysListening.activationPhrase;
+}
+function toggleAlwaysListeningSection(isChecked: boolean) {
+  const listeningSection = document.querySelector('.alwaysListeningInput') as HTMLElement;
+  if (isChecked) {
+    listeningSection.style.display = 'inline-block';
+  } else {
+    listeningSection.style.display = 'none';
+  }
 }
 
 window.onload = function () {
   onLoad();
+  const alwaysListening = <HTMLInputElement>document.getElementById('alwaysListeningToggle');
+  alwaysListening?.addEventListener('change', (e) => {
+    const checkbox = e.target as HTMLInputElement;
+    const activationWordInput = document.getElementsByClassName('alwaysListeningInput')[0] as HTMLElement;
+    const activationPhrase = document.getElementById('activationPhrase') as HTMLInputElement;
+    if (activationWordInput) toggleAlwaysListeningSection(checkbox.checked);
+    onAlwaysListeningChange(checkbox.checked, activationPhrase.value);
+  });
   const inputs = document.querySelectorAll('input');
   inputs.forEach((input) => {
-    input.addEventListener('keydown', debounce(onChange));
+    input.addEventListener('keydown', debounce(onCommandChange));
   });
 };

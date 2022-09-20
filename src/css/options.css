@@ -86,6 +86,7 @@ input[type='text']:focus {
   display: inline-flex;
   width: 60px;
   height: 34px;
+  margin-right: 10px
 }
 
 /* Hide default HTML checkbox */
@@ -141,4 +142,13 @@ input:checked + .slider:before {
 
 .slider.round:before {
   border-radius: 50%;
+}
+
+.alwaysListening {
+  display: flex;
+  align-items: center;
+}
+.alwaysListeningInput {
+  display: none;
+  margin-left: 20px;
 }

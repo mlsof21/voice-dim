@@ -87,7 +87,7 @@ export function store(key: string, value: any) {
   });
 }
 
-export function retrieve(key: string): Promise<any> {
+export function retrieve(key: string, defaultValue: any): Promise<any> {
   return new Promise((resolve, reject) => {
     chrome.storage.local.get([key], function (result) {
       if (chrome.runtime.lastError) {
@@ -96,8 +96,8 @@ export function retrieve(key: string): Promise<any> {
       }
       console.log({ result });
       if (Object.keys(result).length == 0) {
-        store('commands', DEFAULT_COMMANDS);
-        resolve(DEFAULT_COMMANDS);
+        store(key, defaultValue);
+        resolve(defaultValue);
       }
       console.log('Found', result[key]);
       resolve(result[key]);

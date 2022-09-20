@@ -12,12 +12,21 @@
       the same action, separate the commands with a comma (ex. for <code>Transfer item (not equip)</code>: transfer,
       transmat). Try not to use similar sounding words for different commands.
     </p>
-    <div>
+
+    <h2>Always Listening Mode</h2>
+    <p>
+      Always listening mode will require an activation word in order for Voice DIM to start listening for a command.
+      It's recommended to use at least two syllables for your activation word/phrase for better performance.
+    </p>
+    <div class="alwaysListening">
       <label class="switch">
-        <input type="checkbox" />
+        <input type="checkbox" name="alwaysListeningToggle" id="alwaysListeningToggle" />
         <span class="slider round"></span>
       </label>
       <span>Always listening mode</span>
+      <div class="alwaysListeningInput">
+        <label for="activationPhrase">Activation Phrase:</label><input id="activationPhrase" type="text" />
+      </div>
     </div>
     <ul class="wrapper">
       <li class="form-row"><span class="action">Action</span><span class="command">Voice Command</span></li>
