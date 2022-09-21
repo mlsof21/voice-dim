@@ -309,7 +309,7 @@ function getPerkQuery(query: string) {
   const perkNames = [];
   for (const perkName of splitPerkNames) {
     const closestPerk = getClosestMatch(knownPerks, perkName);
-    if (closestPerk && closestPerk.match !== '') perkNames.push(`perkname:"${closestPerk}"`);
+    if (closestPerk && closestPerk.match !== '') perkNames.push(`perkname:"${closestPerk.match}"`);
   }
   perkQuery = perkNames.join(' ');
   return perkQuery;

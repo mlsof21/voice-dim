@@ -1,3 +1,12 @@
+### 1.1.3 - 2022-09-20 - Perk fix
+
+- Fixed perk matching
+
+### 1.1.2 - 2022-09-19 - Options page links
+
+- Added an `onInstalled` event for the extension. It'll direct users to the options page.
+- Link to the options page from the `?`
+
 ### 1.1.1 - 2022-09-16 - Better performance
 
 - Use a `waitForElement/waitForSearchToUpdate` function instead of arbitrarily sleeping in code
