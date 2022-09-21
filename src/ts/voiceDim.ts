@@ -298,7 +298,7 @@ function getGenericQuery(query: string) {
   return genericQuery.trim();
 }
 
-function getPerkQuery(query: string) {
+export function getPerkQuery(query: string) {
   let perkQuery = '';
   const splitPerkNames = query
     .split(' and ')
