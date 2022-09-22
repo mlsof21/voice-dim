@@ -29,6 +29,8 @@
   },
   "homepage": "https://github.com/mlsof21/voice-dim#readme",
   "dependencies": {
+    "@types/annyang": "^2.6.2",
+    "annyang": "^2.6.1",
     "fuse.js": "^6.6.2"
   },
   "devDependencies": {

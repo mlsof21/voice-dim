@@ -10,7 +10,7 @@ import {
   waitForSearchToUpdate,
 } from './common';
 import { SpeechService } from './speech';
-
+const annyang = require('annyang');
 const origConsoleLog = console.log;
 
 console.log = function () {
@@ -23,7 +23,6 @@ console.log = function () {
 };
 
 let speechService: SpeechService | null;
-
 // Keyboard and Mouse Events
 const uiEvents = {
   singleClick: new MouseEvent('click', {
@@ -505,8 +504,17 @@ function reverseMapCustomCommands(commands: any) {
 async function getAlwaysListeningOptions() {
   const options: AlwaysListening = await retrieve('alwaysListening', DEFAULT_ALWAYS_LISTENING);
   console.log({ options });
-  if (speechService) speechService.stopListening();
-  if (options.active) speechService = new SpeechService(options);
+  // if (speechService) speechService.stopListening();
+  // if (options.active) speechService = new SpeechService(options);
+  if (annyang) {
+    console.log('initializing annyang');
+    annyang.start({ autoRestart: options.active, continuous: options.active });
+    annyang.addCallback('result', (userSaid: string, commandText: string, results: string[]) => {
+      console.log({ userSaid, commandText, results });
+      // parseSpeech(userSaid ?? '');
+    });
+    annyang.debug(true);
+  }
 }
 
 function createMicDiv() {
@@ -562,4 +570,4 @@ function init() {
   createHelpDiv();
 }
 
-init();
+window.addEventListener('load', init);
