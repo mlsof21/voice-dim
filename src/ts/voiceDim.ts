@@ -1,5 +1,7 @@
 import Fuse from 'fuse.js';
 import {
+  AlwaysListening,
+  DEFAULT_ALWAYS_LISTENING,
   DEFAULT_COMMANDS,
   getVisibleItems,
   retrieve,
@@ -19,6 +21,8 @@ console.log = function () {
   }
   origConsoleLog.apply(console, args);
 };
+
+let speechService: SpeechService | null;
 
 // Keyboard and Mouse Events
 const uiEvents = {
@@ -182,6 +186,7 @@ const potentialActions: ActionFunction = {
 };
 
 export async function parseSpeech(this: any, transcript: string) {
+  clearSearchBar();
   let query = transcript.trim();
   const closestMatch = getClosestMatch(Object.keys(mappedCommands), query);
 
@@ -201,7 +206,7 @@ export async function parseSpeech(this: any, transcript: string) {
 }
 
 async function handleStoreItem(query: string) {
-  await populateSearchBar('is:incurrentchar');
+  await populateSearchBar('is:incurrentchar', true);
   const availableItems = getAllTransferableItems();
   const itemToStore = getClosestMatch(Object.keys(availableItems), query);
   if (!itemToStore || (itemToStore && itemToStore.match === '')) {
@@ -255,7 +260,6 @@ async function getItemToMove(query: string): Promise<Element | null> {
   let nonPerkQuery = getGenericQuery(splitQuery[0]);
 
   const perkQuery = splitQuery.length > 1 && splitQuery[1] !== '' ? getPerkQuery(splitQuery[1]) : '';
-
   if (nonPerkQuery === '') {
     if (perkQuery !== '') {
       await populateSearchBar(perkQuery, true);
@@ -458,10 +462,10 @@ function clearSearchBar() {
 }
 
 function handleShortcutPress() {
-  if (!speechService.recognizing) {
-    speechService.startListening();
+  if (!speechService?.recognizing) {
+    speechService?.startListening();
   } else {
-    speechService.stopListening();
+    speechService?.stopListening();
   }
 }
 
@@ -474,8 +478,10 @@ chrome.runtime.onMessage.addListener(async function (request, sender, sendRespon
   }
   if (request === 'shortcut updated') {
     await getCustomCommands();
-
-    // sendResponse({ ack: 'Acknowledged.' });
+    sendResponse({ ack: 'Acknowledged.' });
+  }
+  if (request === 'listening options updated') {
+    await getAlwaysListeningOptions();
   }
 });
 
@@ -494,6 +500,13 @@ function reverseMapCustomCommands(commands: any) {
     });
   }
   return newCommands;
+}
+
+async function getAlwaysListeningOptions() {
+  const options: AlwaysListening = await retrieve('alwaysListening', DEFAULT_ALWAYS_LISTENING);
+  console.log({ options });
+  if (speechService) speechService.stopListening();
+  if (options.active) speechService = new SpeechService(options);
 }
 
 function createMicDiv() {
@@ -544,10 +557,9 @@ async function getPerks() {
 function init() {
   getPerks();
   getCustomCommands();
+  getAlwaysListeningOptions();
   createMicDiv();
   createHelpDiv();
 }
 
 init();
-
-const speechService = new SpeechService();

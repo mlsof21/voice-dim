@@ -1,4 +1,4 @@
-import { debounce, DEFAULT_COMMANDS, retrieve, sleep, store } from './common';
+import { AlwaysListening, debounce, DEFAULT_ALWAYS_LISTENING, DEFAULT_COMMANDS, retrieve, store } from './common';
 
 function onCommandChange() {
   const commands: Record<string, string[]> = {};
@@ -19,8 +19,31 @@ function onCommandChange() {
   });
 }
 
-function onAlwaysListeningChange(alwaysListening: boolean, activationPhrase: string) {
-  store('alwaysListening', { alwaysListening, activationPhrase });
+function sendListenOptionsMessage() {
+  chrome.tabs.query({}, (tabs) => {
+    const dimTab = tabs.filter((tab) => tab.url?.match(/destinyitemmanager\.com.*inventory/))[0];
+    if (dimTab.id)
+      chrome.tabs.sendMessage(dimTab.id, 'listening options updated', (response) => {
+        console.log('[voice-dim]', { response });
+      });
+  });
+}
+
+function onActivationPhraseChange() {
+  console.log('updating activation phrase');
+
+  const activationPhrase = <HTMLInputElement>document.getElementById('activationPhrase');
+  const listeningToggle = <HTMLInputElement>document.getElementById('alwaysListeningToggle');
+
+  store('alwaysListening', { active: listeningToggle.checked, activationPhrase: activationPhrase.value });
+  sendListenOptionsMessage();
+}
+
+function onAlwaysListeningChange(listeningOptions: AlwaysListening) {
+  console.log('updating always listening');
+
+  store('alwaysListening', { active: listeningOptions.active, activationPhrase: listeningOptions.activationPhrase });
+  sendListenOptionsMessage();
 }
 
 function updateSaveText(show: boolean, text: string = '') {
@@ -46,16 +69,14 @@ async function onLoad() {
     );
   });
 
-  const alwaysListening: { alwaysListening: boolean; activationPhrase: string } = await retrieve('alwaysListening', {
-    alwaysListening: false,
-    activationPhrase: 'ok dim',
-  });
+  const alwaysListening: AlwaysListening = await retrieve('alwaysListening', DEFAULT_ALWAYS_LISTENING);
   const listeningCheckbox = <HTMLInputElement>document.getElementById('alwaysListeningToggle');
-  listeningCheckbox.checked = alwaysListening.alwaysListening;
-  toggleAlwaysListeningSection(alwaysListening.alwaysListening);
+  listeningCheckbox.checked = alwaysListening.active;
+  toggleAlwaysListeningSection(alwaysListening.active);
   const activationPhrase = <HTMLInputElement>document.getElementById('activationPhrase');
   activationPhrase.value = alwaysListening.activationPhrase;
 }
+
 function toggleAlwaysListeningSection(isChecked: boolean) {
   const listeningSection = document.querySelector('.alwaysListeningInput') as HTMLElement;
   if (isChecked) {
@@ -69,14 +90,17 @@ window.onload = function () {
   onLoad();
   const alwaysListening = <HTMLInputElement>document.getElementById('alwaysListeningToggle');
   alwaysListening?.addEventListener('change', (e) => {
-    const checkbox = e.target as HTMLInputElement;
-    const activationWordInput = document.getElementsByClassName('alwaysListeningInput')[0] as HTMLElement;
-    const activationPhrase = document.getElementById('activationPhrase') as HTMLInputElement;
+    const checkbox = <HTMLInputElement>e.target;
+    const activationWordInput = <HTMLElement>document.getElementsByClassName('alwaysListeningInput')[0];
+    const activationPhrase = <HTMLInputElement>document.getElementById('activationPhrase');
     if (activationWordInput) toggleAlwaysListeningSection(checkbox.checked);
-    onAlwaysListeningChange(checkbox.checked, activationPhrase.value);
+    onAlwaysListeningChange({ active: checkbox.checked, activationPhrase: activationPhrase.value });
   });
-  const inputs = document.querySelectorAll('input');
-  inputs.forEach((input) => {
+  const activationPhraseInput = <HTMLInputElement>document.getElementById('activationPhrase');
+  activationPhraseInput?.addEventListener('keydown', debounce(onActivationPhraseChange));
+  const commandInputs = document.querySelectorAll('.commands input');
+  console.log({ commandInputs });
+  commandInputs.forEach((input) => {
     input.addEventListener('keydown', debounce(onCommandChange));
   });
 };

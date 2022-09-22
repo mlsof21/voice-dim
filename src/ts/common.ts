@@ -79,6 +79,16 @@ export const DEFAULT_COMMANDS: Record<string, string[]> = {
   stopFarming: ['stop farming mode'],
 };
 
+export type AlwaysListening = {
+  active: boolean;
+  activationPhrase: string;
+};
+
+export const DEFAULT_ALWAYS_LISTENING: AlwaysListening = {
+  active: false,
+  activationPhrase: 'voice dim',
+};
+
 export function store(key: string, value: any) {
   console.log('storing', key, value);
 
