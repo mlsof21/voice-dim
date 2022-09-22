@@ -509,11 +509,21 @@ async function getAlwaysListeningOptions() {
   if (annyang) {
     console.log('initializing annyang');
     annyang.start({ autoRestart: options.active, continuous: options.active });
-    annyang.addCallback('result', (userSaid: string, commandText: string, results: string[]) => {
+    annyang.addCallback('result', async (userSaid: string[], commandText: string, results: string[]) => {
       console.log({ userSaid, commandText, results });
+      for (let said of userSaid) {
+        said = said.trim().toLowerCase();
+        if (said.includes(options.activationPhrase)) {
+          const transcript = said.split(options.activationPhrase)[1];
+          console.log({ transcript });
+          await parseSpeech(transcript);
+          break;
+        }
+      }
+
       // parseSpeech(userSaid ?? '');
     });
-    annyang.debug(true);
+    // annyang.debug(true);
   }
 }
 
