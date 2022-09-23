@@ -1,4 +1,12 @@
-import { AlwaysListening, debounce, DEFAULT_ALWAYS_LISTENING, DEFAULT_COMMANDS, retrieve, store } from './common';
+import {
+  AlwaysListening,
+  debounce,
+  DEFAULT_ALWAYS_LISTENING,
+  DEFAULT_COMMANDS,
+  infoLog,
+  retrieve,
+  store,
+} from './common';
 
 function onCommandChange() {
   const commands: Record<string, string[]> = {};
@@ -11,10 +19,10 @@ function onCommandChange() {
   setTimeout(() => updateSaveText(false), 3000);
 
   chrome.tabs.query({}, (tabs) => {
-    const dimTab = tabs.filter((tab) => tab.url?.match(/destinyitemmanager\.com.*inventory/))[0];
-    if (dimTab.id)
-      chrome.tabs.sendMessage(dimTab.id, 'shortcut updated', (response) => {
-        console.log('[voice-dim]', { response });
+    const dimTabs = tabs.filter((tab) => tab.url?.match(/destinyitemmanager\.com.*inventory/));
+    if (dimTabs && dimTabs[0].id)
+      chrome.tabs.sendMessage(dimTabs[0].id, 'shortcut updated', (response) => {
+        infoLog('voice dim', { response });
       });
   });
 }
@@ -24,13 +32,13 @@ function sendListenOptionsMessage() {
     const dimTab = tabs.filter((tab) => tab.url?.match(/destinyitemmanager\.com.*inventory/))[0];
     if (dimTab.id)
       chrome.tabs.sendMessage(dimTab.id, 'listening options updated', (response) => {
-        console.log('[voice-dim]', { response });
+        infoLog('voice dim', { response });
       });
   });
 }
 
 function onActivationPhraseChange() {
-  console.log('updating activation phrase');
+  infoLog('voice dim', 'updating activation phrase');
 
   const activationPhrase = <HTMLInputElement>document.getElementById('activationPhrase');
   const listeningToggle = <HTMLInputElement>document.getElementById('alwaysListeningToggle');
@@ -40,7 +48,7 @@ function onActivationPhraseChange() {
 }
 
 function onAlwaysListeningChange(listeningOptions: AlwaysListening) {
-  console.log('updating always listening');
+  infoLog('voice dim', 'updating alwaysListening');
 
   store('alwaysListening', { active: listeningOptions.active, activationPhrase: listeningOptions.activationPhrase });
   sendListenOptionsMessage();
@@ -99,7 +107,7 @@ window.onload = function () {
   const activationPhraseInput = <HTMLInputElement>document.getElementById('activationPhrase');
   activationPhraseInput?.addEventListener('keydown', debounce(onActivationPhraseChange));
   const commandInputs = document.querySelectorAll('.commands input');
-  console.log({ commandInputs });
+  infoLog('voice dim', { commandInputs });
   commandInputs.forEach((input) => {
     input.addEventListener('keydown', debounce(onCommandChange));
   });

@@ -4,25 +4,15 @@ import {
   DEFAULT_ALWAYS_LISTENING,
   DEFAULT_COMMANDS,
   getVisibleItems,
+  infoLog,
   retrieve,
   sleep,
   waitForElementToDisplay,
   waitForSearchToUpdate,
 } from './common';
-import { SpeechService } from './speech';
+
 const annyang = require('annyang');
-const origConsoleLog = console.log;
 
-console.log = function () {
-  const args = [];
-  args.push('[voice-dim]');
-  for (let i = 0; i < arguments.length; i++) {
-    args.push(arguments[i]);
-  }
-  origConsoleLog.apply(console, args);
-};
-
-let speechService: SpeechService | null;
 // Keyboard and Mouse Events
 const uiEvents = {
   singleClick: new MouseEvent('click', {
@@ -136,15 +126,15 @@ const otherQueries = {
   deepsight: 'is:deepsight',
   'deep sight': 'is:deepsight',
   'deep site': 'is:deepsight',
-  wishlist: 'is:wishlist',
   wishlisted: 'is:wishlist',
+  wishlist: 'is:wishlist',
   favorite: 'tag:favorite',
   keeper: 'tag:keep',
   junk: 'tag:junk',
   infusion: 'tag:infuse',
   archived: 'tag:archive',
-  tagged: 'is:tagged',
   'not tagged': '-is:tagged',
+  tagged: 'is:tagged',
   'has notes': 'is:hasnotes',
   'has no notes': '-is:hasnotes',
 };
@@ -166,6 +156,7 @@ const transferableItemAriaLabels = [
   'Class Armor',
 ];
 
+let listeningOptions: AlwaysListening;
 let mappedCommands: Record<string, string> = {};
 
 type ActionFunction = Record<
@@ -190,15 +181,15 @@ export async function parseSpeech(this: any, transcript: string) {
   const closestMatch = getClosestMatch(Object.keys(mappedCommands), query);
 
   if (!closestMatch) {
-    console.log("Couldn't determine correct action");
+    infoLog('voice dim', "Couldn't determine correct action");
     return;
   }
   const closestAction = getClosestMatch(Object.keys(potentialActions), mappedCommands[closestMatch.match]);
   if (!closestAction) {
-    console.log("Couldn't determine correct action");
+    infoLog('voice dim', "Couldn't determine correct action");
     return;
   }
-  console.log({ closestAction });
+  infoLog('voice dim', { closestAction });
 
   query = query.replace(closestMatch.toReplace, '').trim();
   await potentialActions[closestAction.match].call(this, query, closestAction.match);
@@ -235,9 +226,9 @@ function getCurrentCharacterClass(): string {
   return '';
 }
 async function handleItemMovement(query: string, action: string): Promise<void> {
-  console.log('in handleItemMovement', { query, action });
+  infoLog('voice dim', 'in handleItemMovement', { query, action });
   const itemToMove = await getItemToMove(query);
-  console.log({ itemToMove });
+  infoLog('voice dim', { itemToMove });
   if (!itemToMove) return;
 
   switch (action) {
@@ -260,16 +251,13 @@ async function getItemToMove(query: string): Promise<Element | null> {
 
   const perkQuery = splitQuery.length > 1 && splitQuery[1] !== '' ? getPerkQuery(splitQuery[1]) : '';
   if (nonPerkQuery === '') {
-    if (perkQuery !== '') {
-      await populateSearchBar(perkQuery, true);
-    }
     const availableItems = getAllTransferableItems();
     const itemToGet = getClosestMatch(Object.keys(availableItems), splitQuery[0]);
-    await populateSearchBar(`name:"${itemToGet?.match}"`);
+    await populateSearchBar(`${perkQuery} name:"${itemToGet?.match}"`);
     const visibleItems = getVisibleItems();
     itemToMove = visibleItems[0];
   } else {
-    nonPerkQuery += ` ${perkQuery} -is:incurrentchar`;
+    nonPerkQuery += ` ${perkQuery} -is:incurrentchar -is:postmaster`;
     await populateSearchBar(nonPerkQuery);
     const filteredItems = getVisibleItems();
     if (filteredItems.length > 0) {
@@ -326,7 +314,7 @@ function getPerkQuery(query: string) {
 }
 
 async function handleStartFarmingMode() {
-  console.log('Starting farming mode');
+  infoLog('voice dim', 'Starting farming mode');
   await openCurrentCharacterLoadoutMenu();
   const farmingSpan = document.querySelector('.loadout-menu ul li span');
   farmingSpan?.dispatchEvent(uiEvents.singleClick);
@@ -350,7 +338,7 @@ async function openCurrentCharacterLoadoutMenu() {
 }
 
 async function handleEquipLoadout(loadoutName: string) {
-  console.log('Equipping loadout', loadoutName);
+  infoLog('voice dim', 'Equipping loadout', loadoutName);
   await openCurrentCharacterLoadoutMenu();
   const availableLoadoutNames = getLoadoutNames();
   const loadoutToEquip = getClosestMatch(availableLoadoutNames, loadoutName);
@@ -414,18 +402,18 @@ function getClosestMatch(availableItems: string[], query: string): FuseMatch | n
   };
   const fuse = new Fuse(availableItems, options);
   const result = fuse.search(query);
-  console.log({ result, query });
+  infoLog('voice dim', { result, query });
 
   if (isAcceptableResult(result)) {
     return { toReplace: query, match: result[0].item };
   }
 
-  console.log("Couldn't find a match. Trying to find match by splitting the current query.");
+  infoLog('voice dim', "Couldn't find a match. Trying to find match by splitting the current query.");
   const splitQuery = query.split(' ');
 
   for (const split of splitQuery) {
     const splitResult = fuse.search(split);
-    console.log({ splitResult, split });
+    infoLog('voice dim', { splitResult, split });
     return isAcceptableResult(splitResult)
       ? { toReplace: split, match: splitResult[0].item }
       : { toReplace: '', match: '' };
@@ -444,7 +432,7 @@ async function populateSearchBar(searchInput: string, clearFirst: boolean = fals
     const count = getVisibleItems().length;
     if (clearFirst) clearSearchBar();
     searchBar.value += ' ' + searchInput;
-    console.log('Populating search bar with', searchBar.value);
+    infoLog('voice dim', 'Populating search bar with', searchBar.value);
     searchBar?.dispatchEvent(uiEvents.input);
     await sleep(50);
     searchBar?.focus();
@@ -455,22 +443,27 @@ async function populateSearchBar(searchInput: string, clearFirst: boolean = fals
 }
 
 function clearSearchBar() {
-  console.log('Clearing search');
+  infoLog('voice dim', 'Clearing search');
   const clearButton = document.querySelector('.filter-bar-button[title^=Clear]');
   clearButton?.dispatchEvent(uiEvents.singleClick);
 }
 
 function handleShortcutPress() {
-  if (!speechService?.recognizing) {
-    speechService?.startListening();
+  if (!annyang.isListening()) {
+    annyang.start();
+    annyang.addCallback('result', (userSaid: string[]) => {
+      infoLog('shotcut', userSaid);
+      parseSpeech(userSaid[0]);
+      annyang.abort();
+    });
   } else {
-    speechService?.stopListening();
+    annyang.abort();
   }
 }
 
 chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
-  console.log({ request });
-  if (request.dimShortcutPressed) {
+  infoLog('voice dim', { request });
+  if (request.dimShortcutPressed && !listeningOptions.active) {
     sendResponse({ ack: 'Acknowledged.' });
     handleShortcutPress();
     return;
@@ -487,7 +480,7 @@ chrome.runtime.onMessage.addListener(async function (request, sender, sendRespon
 async function getCustomCommands() {
   const commands = await retrieve('commands', DEFAULT_COMMANDS);
   mappedCommands = reverseMapCustomCommands(commands);
-  console.log({ commands, mappedCommands });
+  infoLog('voice dim', { commands, mappedCommands });
 }
 
 function reverseMapCustomCommands(commands: any) {
@@ -502,28 +495,32 @@ function reverseMapCustomCommands(commands: any) {
 }
 
 async function getAlwaysListeningOptions() {
-  const options: AlwaysListening = await retrieve('alwaysListening', DEFAULT_ALWAYS_LISTENING);
-  console.log({ options });
+  listeningOptions = await retrieve('alwaysListening', DEFAULT_ALWAYS_LISTENING);
+  infoLog('voice dim', { listeningOptions });
+  infoLog('annyang', annyang.isListening());
+  if (annyang.isListening()) annyang.abort();
   // if (speechService) speechService.stopListening();
   // if (options.active) speechService = new SpeechService(options);
+  infoLog('voice dim annyang', annyang);
   if (annyang) {
-    console.log('initializing annyang');
-    annyang.start({ autoRestart: options.active, continuous: options.active });
-    annyang.addCallback('result', async (userSaid: string[], commandText: string, results: string[]) => {
-      console.log({ userSaid, commandText, results });
-      for (let said of userSaid) {
-        said = said.trim().toLowerCase();
-        if (said.includes(options.activationPhrase)) {
-          const transcript = said.split(options.activationPhrase)[1];
-          console.log({ transcript });
-          await parseSpeech(transcript);
-          break;
+    infoLog('voice dim', 'initializing annyang');
+    annyang.start({ autoRestart: listeningOptions.active, continuous: listeningOptions.active });
+    annyang.addCallback('result', (userSaid?: string[] | undefined) => {
+      infoLog('voice dim', { userSaid });
+      if (userSaid)
+        for (let said of userSaid) {
+          said = said.trim().toLowerCase();
+          let ap = listeningOptions.activationPhrase;
+          // include a space intentionally
+          if (said.includes(`${ap} `)) {
+            const transcript = said.split(`${ap} `)[1];
+            infoLog('voice dim', { transcript });
+            parseSpeech(transcript);
+            break;
+          }
         }
-      }
-
-      // parseSpeech(userSaid ?? '');
     });
-    // annyang.debug(true);
+    annyang.debug(true);
   }
 }
 
@@ -569,7 +566,7 @@ async function getPerks() {
     'https://raw.githubusercontent.com/DestinyItemManager/d2ai-module/master/voice-dim-valid-perks.json'
   );
   knownPerks = await response.json();
-  console.log({ knownPerks });
+  infoLog('voice dim', { knownPerks });
 }
 
 function init() {

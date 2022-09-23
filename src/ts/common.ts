@@ -3,6 +3,10 @@ export interface Action {
   timeout: number;
 }
 
+export function infoLog(tag: string, message: unknown, ...args: unknown[]) {
+  console.log(`[${tag}]`, message, ...args);
+}
+
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(func: F, waitFor: number = 300) => {
@@ -58,7 +62,7 @@ export async function waitForElementToDisplay(
       } else {
         setTimeout(function () {
           if (timeoutInMs && Date.now() - startTimeInMs > timeoutInMs) {
-            console.log("couldn't find", selector);
+            infoLog('voice dim', "couldn't find", selector);
             return;
           }
           loopSearch();
@@ -90,10 +94,8 @@ export const DEFAULT_ALWAYS_LISTENING: AlwaysListening = {
 };
 
 export function store(key: string, value: any) {
-  console.log('storing', key, value);
-
   chrome.storage.local.set({ [key]: value }, () => {
-    console.log('Stored', key, value);
+    infoLog('voice dim', 'Stored', key, value);
   });
 }
 
@@ -104,12 +106,12 @@ export function retrieve(key: string, defaultValue: any): Promise<any> {
         console.error(chrome.runtime.lastError.message);
         reject(chrome.runtime.lastError.message);
       }
-      console.log({ result });
+      infoLog('voice dim', { result });
       if (Object.keys(result).length == 0) {
         store(key, defaultValue);
         resolve(defaultValue);
       }
-      console.log('Found', result[key]);
+      infoLog('voice dim', 'Found', result[key]);
       resolve(result[key]);
     });
   });
