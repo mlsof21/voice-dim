@@ -327,7 +327,14 @@ function handleStopFarmingMode() {
 
 async function handleEquipMaxPower() {
   await openCurrentCharacterLoadoutMenu();
-  const maxPowerSpan = document.querySelector('span[class^=MaxlightButton]');
+  const xpath = "//span[contains(text(),'Max Power')]";
+  const maxPowerSpan = document.evaluate(
+    xpath,
+    document,
+    null,
+    XPathResult.FIRST_ORDERED_NODE_TYPE,
+    null
+  ).singleNodeValue;
   maxPowerSpan?.dispatchEvent(uiEvents.singleClick);
 }
 
@@ -446,6 +453,7 @@ function clearSearchBar() {
   infoLog('voice dim', 'Clearing search');
   const clearButton = document.querySelector('.filter-bar-button[title^=Clear]');
   clearButton?.dispatchEvent(uiEvents.singleClick);
+  if (searchBar) searchBar.value = '';
 }
 
 function handleShortcutPress() {
