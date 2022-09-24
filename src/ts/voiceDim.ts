@@ -176,6 +176,13 @@ const potentialActions: ActionFunction = {
   postmaster: handleCollectPostmaster,
 };
 
+function updateUiTranscript(transcript: string, show: boolean) {
+  const textDiv = document.querySelector('.textContainer');
+  (<HTMLDivElement>textDiv).style.display = show ? 'flex' : 'none';
+  const transcriptSpan = document.getElementById('transcript');
+  if (transcriptSpan) transcriptSpan.innerText = transcript;
+}
+
 export async function parseSpeech(this: any, transcript: string) {
   clearSearchBar();
   let query = transcript.trim();
@@ -485,8 +492,11 @@ function handleShortcutPress() {
 function initializeShortcutListening() {
   annyang.addCallback('result', (userSaid: string[]) => {
     infoLog('shortcut', userSaid);
-    parseSpeech(userSaid[0].trim().toLowerCase());
+    const transcript = userSaid[0].trim().toLowerCase();
+    updateUiTranscript(transcript, true);
+    parseSpeech(transcript);
     annyang.abort();
+    setTimeout(() => updateUiTranscript('', false), 7000);
   });
 }
 
@@ -502,7 +512,9 @@ function initializeAlwaysListening() {
         if (said.includes(`${ap} `)) {
           const transcript = said.split(`${ap} `)[1];
           infoLog('voice dim', { transcript });
+          updateUiTranscript(transcript, true);
           parseSpeech(transcript);
+          setTimeout(() => updateUiTranscript('', false), 7000);
           break;
         }
       }
