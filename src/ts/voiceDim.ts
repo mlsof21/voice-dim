@@ -126,6 +126,7 @@ const otherQueries = {
   deepsight: 'is:deepsight',
   'deep sight': 'is:deepsight',
   'deep site': 'is:deepsight',
+  'wish-listed': 'is:wishlist',
   wishlisted: 'is:wishlist',
   wishlist: 'is:wishlist',
   favorite: 'tag:favorite',
@@ -189,10 +190,16 @@ export async function parseSpeech(this: any, transcript: string) {
     infoLog('voice dim', "Couldn't determine correct action");
     return;
   }
-  infoLog('voice dim', { closestAction });
+  infoLog('voice dim', 'Action:', closestAction.match);
 
-  query = query.replace(closestMatch.toReplace, '').trim();
+  query = getNewQuery(query, closestMatch.match);
   await potentialActions[closestAction.match].call(this, query, closestAction.match);
+}
+
+function getNewQuery(query: string, phraseToReplace: string) {
+  const phraseIndex = query.indexOf(phraseToReplace) + phraseToReplace.length;
+  const firstSpace = query.indexOf(' ', phraseIndex);
+  return query.substring(firstSpace + 1).trim();
 }
 
 async function handleStoreItem(query: string) {
@@ -229,8 +236,10 @@ async function handleItemMovement(query: string, action: string): Promise<void> 
   infoLog('voice dim', 'in handleItemMovement', { query, action });
   const itemToMove = await getItemToMove(query);
   infoLog('voice dim', { itemToMove });
-  if (!itemToMove) return;
-
+  if (!itemToMove) {
+    clearSearchBar();
+    return;
+  }
   switch (action) {
     case 'transfer':
       await transferItem(itemToMove);
@@ -363,7 +372,14 @@ function getLoadoutNames(): string[] {
 }
 
 async function handleCollectPostmaster() {
-  const postmasterButton = document.querySelector('[class^="PullFromPostmaster"]');
+  const xpath = "//span[contains(text(),'Collect Postmaster')]";
+  const postmasterButton = document.evaluate(
+    xpath,
+    document,
+    null,
+    XPathResult.FIRST_ORDERED_NODE_TYPE,
+    null
+  ).singleNodeValue;
   postmasterButton?.dispatchEvent(uiEvents.singleClick);
   await sleep(500);
   postmasterButton?.dispatchEvent(uiEvents.singleClick);
@@ -444,6 +460,7 @@ async function populateSearchBar(searchInput: string, clearFirst: boolean = fals
     await sleep(50);
     searchBar?.focus();
     searchBar?.dispatchEvent(uiEvents.enter);
+    searchBar?.blur;
 
     await waitForSearchToUpdate(count);
   }
@@ -454,19 +471,42 @@ function clearSearchBar() {
   const clearButton = document.querySelector('.filter-bar-button[title^=Clear]');
   clearButton?.dispatchEvent(uiEvents.singleClick);
   if (searchBar) searchBar.value = '';
+  searchBar?.blur;
 }
 
 function handleShortcutPress() {
   if (!annyang.isListening()) {
     annyang.start();
-    annyang.addCallback('result', (userSaid: string[]) => {
-      infoLog('shotcut', userSaid);
-      parseSpeech(userSaid[0]);
-      annyang.abort();
-    });
   } else {
     annyang.abort();
   }
+}
+
+function initializeShortcutListening() {
+  annyang.addCallback('result', (userSaid: string[]) => {
+    infoLog('shortcut', userSaid);
+    parseSpeech(userSaid[0].trim().toLowerCase());
+    annyang.abort();
+  });
+}
+
+function initializeAlwaysListening() {
+  annyang.start({ autoRestart: listeningOptions.active, continuous: listeningOptions.active });
+  annyang.addCallback('result', (userSaid?: string[] | undefined) => {
+    infoLog('voice dim', { userSaid });
+    if (userSaid)
+      for (let said of userSaid) {
+        said = said.trim().toLowerCase();
+        let ap = listeningOptions.activationPhrase;
+        // include a space intentionally
+        if (said.includes(`${ap} `)) {
+          const transcript = said.split(`${ap} `)[1];
+          infoLog('voice dim', { transcript });
+          parseSpeech(transcript);
+          break;
+        }
+      }
+  });
 }
 
 chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
@@ -505,31 +545,14 @@ function reverseMapCustomCommands(commands: any) {
 async function getAlwaysListeningOptions() {
   listeningOptions = await retrieve('alwaysListening', DEFAULT_ALWAYS_LISTENING);
   infoLog('voice dim', { listeningOptions });
-  infoLog('annyang', annyang.isListening());
-  if (annyang.isListening()) annyang.abort();
-  // if (speechService) speechService.stopListening();
-  // if (options.active) speechService = new SpeechService(options);
+  annyang.abort();
+
   infoLog('voice dim annyang', annyang);
-  if (annyang) {
-    infoLog('voice dim', 'initializing annyang');
-    annyang.start({ autoRestart: listeningOptions.active, continuous: listeningOptions.active });
-    annyang.addCallback('result', (userSaid?: string[] | undefined) => {
-      infoLog('voice dim', { userSaid });
-      if (userSaid)
-        for (let said of userSaid) {
-          said = said.trim().toLowerCase();
-          let ap = listeningOptions.activationPhrase;
-          // include a space intentionally
-          if (said.includes(`${ap} `)) {
-            const transcript = said.split(`${ap} `)[1];
-            infoLog('voice dim', { transcript });
-            parseSpeech(transcript);
-            break;
-          }
-        }
-    });
-    annyang.debug(true);
-  }
+  infoLog('voice dim', 'initializing annyang');
+  annyang.removeCallback();
+  if (listeningOptions.active) initializeAlwaysListening();
+  else initializeShortcutListening();
+  // annyang.debug(true);
 }
 
 function createMicDiv() {
