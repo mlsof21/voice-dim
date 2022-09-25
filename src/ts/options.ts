@@ -43,12 +43,18 @@ function onActivationPhraseChange() {
   const activationPhrase = <HTMLInputElement>document.getElementById('activationPhrase');
   const listeningToggle = <HTMLInputElement>document.getElementById('alwaysListeningToggle');
 
+  updateSaveText(true, 'Saved!');
+  setTimeout(() => updateSaveText(false), 3000);
+
   store('alwaysListening', { active: listeningToggle.checked, activationPhrase: activationPhrase.value });
   sendListenOptionsMessage();
 }
 
 function onAlwaysListeningChange(listeningOptions: AlwaysListening) {
   infoLog('voice dim', 'updating alwaysListening');
+
+  updateSaveText(true, 'Saved!');
+  setTimeout(() => updateSaveText(false), 3000);
 
   store('alwaysListening', { active: listeningOptions.active, activationPhrase: listeningOptions.activationPhrase });
   sendListenOptionsMessage();

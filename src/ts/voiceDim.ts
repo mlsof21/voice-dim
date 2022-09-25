@@ -511,20 +511,30 @@ function initializeAlwaysListening() {
   annyang.start({ autoRestart: listeningOptions.active, continuous: listeningOptions.active });
   annyang.addCallback('result', (userSaid?: string[] | undefined) => {
     infoLog('voice dim', { userSaid });
-    if (userSaid)
+    if (userSaid) {
+      let actionPerformed = false;
       for (let said of userSaid) {
         said = said.trim().toLowerCase();
-        let ap = listeningOptions.activationPhrase;
-        // include a space intentionally
-        if (said.includes(`${ap} `)) {
-          const transcript = said.split(`${ap} `)[1];
-          infoLog('voice dim', { transcript });
-          updateUiTranscript(transcript, true);
-          parseSpeech(transcript);
-          setTimeout(() => updateUiTranscript('', false), 7000);
-          break;
+        const ap = listeningOptions.activationPhrase;
+        const phrases = [ap];
+
+        if (ap.includes('dim')) phrases.push(ap.replace('dim', 'them'));
+
+        for (let phrase of phrases) {
+          // include a space intentionally
+          if (said.includes(`${phrase} `)) {
+            const transcript = said.split(`${phrase} `)[1];
+            infoLog('voice dim', { transcript });
+            updateUiTranscript(transcript, true);
+            parseSpeech(transcript);
+            actionPerformed = true;
+            setTimeout(() => updateUiTranscript('', false), 7000);
+            break;
+          }
         }
+        if (actionPerformed) break;
       }
+    }
   });
 }
 
@@ -565,8 +575,6 @@ async function getAlwaysListeningOptions() {
   listeningOptions = await retrieve('alwaysListening', DEFAULT_ALWAYS_LISTENING);
   infoLog('voice dim', { listeningOptions });
   annyang.abort();
-
-  infoLog('voice dim annyang', annyang);
   infoLog('voice dim', 'initializing annyang');
   annyang.removeCallback();
   if (listeningOptions.active) initializeAlwaysListening();
