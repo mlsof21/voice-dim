@@ -183,8 +183,8 @@ function updateUiTranscript(transcript: string, show: boolean) {
   if (transcriptSpan) transcriptSpan.innerText = transcript;
 }
 
-export async function parseSpeech(this: any, transcript: string) {
-  clearSearchBar();
+async function parseSpeech(this: any, transcript: string) {
+  await clearSearchBar();
   let query = transcript.trim();
   const closestMatch = getClosestMatch(Object.keys(mappedCommands), query);
 
@@ -210,11 +210,11 @@ function getNewQuery(query: string, phraseToReplace: string) {
 }
 
 async function handleStoreItem(query: string) {
-  await populateSearchBar('is:incurrentchar', true);
+  await populateSearchBar('is:incurrentchar');
   const availableItems = getAllTransferableItems();
   const itemToStore = getClosestMatch(Object.keys(availableItems), query);
   if (!itemToStore || (itemToStore && itemToStore.match === '')) {
-    clearSearchBar();
+    await clearSearchBar();
     return;
   }
   await populateSearchBar(`name:"${itemToStore?.match}"`);
@@ -222,7 +222,7 @@ async function handleStoreItem(query: string) {
   itemDiv?.dispatchEvent(uiEvents.singleClick);
   const vaultDiv = await waitForElementToDisplay('.item-popup [title^="Vault"]');
   vaultDiv?.dispatchEvent(uiEvents.singleClick);
-  clearSearchBar();
+  await clearSearchBar();
 }
 
 function getCurrentCharacterClass(): string {
@@ -244,7 +244,7 @@ async function handleItemMovement(query: string, action: string): Promise<void> 
   const itemToMove = await getItemToMove(query);
   infoLog('voice dim', { itemToMove });
   if (!itemToMove) {
-    clearSearchBar();
+    await clearSearchBar();
     return;
   }
   switch (action) {
@@ -257,7 +257,7 @@ async function handleItemMovement(query: string, action: string): Promise<void> 
     default:
       break;
   }
-  clearSearchBar();
+  await clearSearchBar();
 }
 
 async function getItemToMove(query: string): Promise<Element | null> {
@@ -456,12 +456,12 @@ function isAcceptableResult(result: Fuse.FuseResult<string>[]): boolean {
   return result.length > 0 && typeof result[0].score !== 'undefined' && result[0].score < 0.5;
 }
 
-async function populateSearchBar(searchInput: string, clearFirst: boolean = false): Promise<void> {
+async function populateSearchBar(searchInput: string): Promise<void> {
   if (!searchBar) searchBar = <HTMLInputElement>document.getElementsByName('filter')[0];
   if (searchBar) {
     const count = getVisibleItems().length;
-    if (clearFirst) clearSearchBar();
-    searchBar.value += ' ' + searchInput;
+    const newValue = `${searchBar.value} ${searchInput.trim()}`.trim();
+    searchBar.value = newValue;
     infoLog('voice dim', 'Populating search bar with', searchBar.value);
     searchBar?.dispatchEvent(uiEvents.input);
     await sleep(50);
@@ -473,12 +473,19 @@ async function populateSearchBar(searchInput: string, clearFirst: boolean = fals
   }
 }
 
-function clearSearchBar() {
-  infoLog('voice dim', 'Clearing search');
+async function clearSearchBar() {
+  infoLog('voice dim', 'Clearing search bar');
   const clearButton = document.querySelector('.filter-bar-button[title^=Clear]');
+  const initialCount = getVisibleItems().length;
+  let waitForUpdate = false;
+  console.log(clearButton);
   clearButton?.dispatchEvent(uiEvents.singleClick);
-  if (searchBar) searchBar.value = '';
+  if (searchBar && searchBar?.value !== '') {
+    searchBar.value = '';
+    waitForUpdate = true;
+  }
   searchBar?.blur;
+  if (waitForUpdate) await waitForSearchToUpdate(initialCount);
 }
 
 function handleShortcutPress() {

@@ -29,7 +29,7 @@ export function waitForSearchToUpdate(
     var startTimeInMs = Date.now();
     (function loopSearch() {
       const count = getVisibleItems();
-      if (count.length < initialCount) {
+      if (count.length !== initialCount) {
         clearTimeout();
         return resolve();
       } else {
