@@ -3,6 +3,10 @@ export interface Action {
   timeout: number;
 }
 
+export function infoLog(tag: string, message: unknown, ...args: unknown[]) {
+  console.log(`[${tag}]`, message, ...args);
+}
+
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(func: F, waitFor: number = 300) => {
@@ -25,7 +29,7 @@ export function waitForSearchToUpdate(
     var startTimeInMs = Date.now();
     (function loopSearch() {
       const count = getVisibleItems();
-      if (count.length < initialCount) {
+      if (count.length !== initialCount) {
         clearTimeout();
         return resolve();
       } else {
@@ -58,7 +62,7 @@ export async function waitForElementToDisplay(
       } else {
         setTimeout(function () {
           if (timeoutInMs && Date.now() - startTimeInMs > timeoutInMs) {
-            console.log("couldn't find", selector);
+            infoLog('voice dim', "couldn't find", selector);
             return;
           }
           loopSearch();
@@ -79,27 +83,35 @@ export const DEFAULT_COMMANDS: Record<string, string[]> = {
   stopFarming: ['stop farming mode'],
 };
 
-export function store(key: string, value: any) {
-  console.log('storing', key, value);
+export type AlwaysListening = {
+  active: boolean;
+  activationPhrase: string;
+};
 
+export const DEFAULT_ALWAYS_LISTENING: AlwaysListening = {
+  active: false,
+  activationPhrase: 'okay ghost',
+};
+
+export function store(key: string, value: any) {
   chrome.storage.local.set({ [key]: value }, () => {
-    console.log('Stored', key, value);
+    infoLog('voice dim', 'Stored', key, value);
   });
 }
 
-export function retrieve(key: string): Promise<any> {
+export function retrieve(key: string, defaultValue: any): Promise<any> {
   return new Promise((resolve, reject) => {
     chrome.storage.local.get([key], function (result) {
       if (chrome.runtime.lastError) {
         console.error(chrome.runtime.lastError.message);
         reject(chrome.runtime.lastError.message);
       }
-      console.log({ result });
+      infoLog('voice dim', { result });
       if (Object.keys(result).length == 0) {
-        store('commands', DEFAULT_COMMANDS);
-        resolve(DEFAULT_COMMANDS);
+        store(key, defaultValue);
+        resolve(defaultValue);
       }
-      console.log('Found', result[key]);
+      infoLog('voice dim', 'Found', result[key]);
       resolve(result[key]);
     });
   });

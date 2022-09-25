@@ -1,3 +1,10 @@
+### 1.2.0 - 2022-09-24 - Always Listening
+
+- Added a toggle-able `Always Listening` mode
+  - Each command must be prefixed with an activation phrase (defaulted to `okay ghost`)
+- Added fix for `maxPower` command (didn't work in normal DIM, only in beta)
+- Added fix for search already being populated when performing a command.
+
 ### 1.1.3 - 2022-09-20 - Perk fix
 
 - Fixed perk matching

@@ -1,17 +1,17 @@
 import Fuse from 'fuse.js';
-import { getVisibleItems, retrieve, sleep, waitForElementToDisplay, waitForSearchToUpdate } from './common';
-import { SpeechService } from './speech';
+import {
+  AlwaysListening,
+  DEFAULT_ALWAYS_LISTENING,
+  DEFAULT_COMMANDS,
+  getVisibleItems,
+  infoLog,
+  retrieve,
+  sleep,
+  waitForElementToDisplay,
+  waitForSearchToUpdate,
+} from './common';
 
-const origConsoleLog = console.log;
-
-console.log = function () {
-  const args = [];
-  args.push('[voice-dim]');
-  for (let i = 0; i < arguments.length; i++) {
-    args.push(arguments[i]);
-  }
-  origConsoleLog.apply(console, args);
-};
+const annyang = require('annyang');
 
 // Keyboard and Mouse Events
 const uiEvents = {
@@ -126,15 +126,16 @@ const otherQueries = {
   deepsight: 'is:deepsight',
   'deep sight': 'is:deepsight',
   'deep site': 'is:deepsight',
-  wishlist: 'is:wishlist',
+  'wish-listed': 'is:wishlist',
   wishlisted: 'is:wishlist',
+  wishlist: 'is:wishlist',
   favorite: 'tag:favorite',
   keeper: 'tag:keep',
   junk: 'tag:junk',
   infusion: 'tag:infuse',
   archived: 'tag:archive',
-  tagged: 'is:tagged',
   'not tagged': '-is:tagged',
+  tagged: 'is:tagged',
   'has notes': 'is:hasnotes',
   'has no notes': '-is:hasnotes',
 };
@@ -156,6 +157,7 @@ const transferableItemAriaLabels = [
   'Class Armor',
 ];
 
+let listeningOptions: AlwaysListening;
 let mappedCommands: Record<string, string> = {};
 
 type ActionFunction = Record<
@@ -174,23 +176,37 @@ const potentialActions: ActionFunction = {
   postmaster: handleCollectPostmaster,
 };
 
-export async function parseSpeech(this: any, transcript: string) {
+function updateUiTranscript(transcript: string, show: boolean) {
+  const textDiv = document.querySelector('.textContainer');
+  (<HTMLDivElement>textDiv).style.display = show ? 'flex' : 'none';
+  const transcriptSpan = document.getElementById('transcript');
+  if (transcriptSpan) transcriptSpan.innerText = transcript;
+}
+
+async function parseSpeech(this: any, transcript: string) {
+  await clearSearchBar();
   let query = transcript.trim();
   const closestMatch = getClosestMatch(Object.keys(mappedCommands), query);
 
   if (!closestMatch) {
-    console.log("Couldn't determine correct action");
+    infoLog('voice dim', "Couldn't determine correct action");
     return;
   }
   const closestAction = getClosestMatch(Object.keys(potentialActions), mappedCommands[closestMatch.match]);
   if (!closestAction) {
-    console.log("Couldn't determine correct action");
+    infoLog('voice dim', "Couldn't determine correct action");
     return;
   }
-  console.log({ closestAction });
+  infoLog('voice dim', 'Action:', closestAction.match);
 
-  query = query.replace(closestMatch.toReplace, '').trim();
+  query = getNewQuery(query, closestMatch.match);
   await potentialActions[closestAction.match].call(this, query, closestAction.match);
+}
+
+function getNewQuery(query: string, phraseToReplace: string) {
+  const phraseIndex = query.indexOf(phraseToReplace) + phraseToReplace.length;
+  const firstSpace = query.indexOf(' ', phraseIndex);
+  return query.substring(firstSpace + 1).trim();
 }
 
 async function handleStoreItem(query: string) {
@@ -198,7 +214,7 @@ async function handleStoreItem(query: string) {
   const availableItems = getAllTransferableItems();
   const itemToStore = getClosestMatch(Object.keys(availableItems), query);
   if (!itemToStore || (itemToStore && itemToStore.match === '')) {
-    clearSearchBar();
+    await clearSearchBar();
     return;
   }
   await populateSearchBar(`name:"${itemToStore?.match}"`);
@@ -206,7 +222,7 @@ async function handleStoreItem(query: string) {
   itemDiv?.dispatchEvent(uiEvents.singleClick);
   const vaultDiv = await waitForElementToDisplay('.item-popup [title^="Vault"]');
   vaultDiv?.dispatchEvent(uiEvents.singleClick);
-  clearSearchBar();
+  await clearSearchBar();
 }
 
 function getCurrentCharacterClass(): string {
@@ -224,11 +240,13 @@ function getCurrentCharacterClass(): string {
   return '';
 }
 async function handleItemMovement(query: string, action: string): Promise<void> {
-  console.log('in handleItemMovement', { query, action });
+  infoLog('voice dim', 'in handleItemMovement', { query, action });
   const itemToMove = await getItemToMove(query);
-  console.log({ itemToMove });
-  if (!itemToMove) return;
-
+  infoLog('voice dim', { itemToMove });
+  if (!itemToMove) {
+    await clearSearchBar();
+    return;
+  }
   switch (action) {
     case 'transfer':
       await transferItem(itemToMove);
@@ -239,7 +257,7 @@ async function handleItemMovement(query: string, action: string): Promise<void> 
     default:
       break;
   }
-  clearSearchBar();
+  await clearSearchBar();
 }
 
 async function getItemToMove(query: string): Promise<Element | null> {
@@ -248,18 +266,14 @@ async function getItemToMove(query: string): Promise<Element | null> {
   let nonPerkQuery = getGenericQuery(splitQuery[0]);
 
   const perkQuery = splitQuery.length > 1 && splitQuery[1] !== '' ? getPerkQuery(splitQuery[1]) : '';
-
   if (nonPerkQuery === '') {
-    if (perkQuery !== '') {
-      await populateSearchBar(perkQuery, true);
-    }
     const availableItems = getAllTransferableItems();
     const itemToGet = getClosestMatch(Object.keys(availableItems), splitQuery[0]);
-    await populateSearchBar(`name:"${itemToGet?.match}"`);
+    await populateSearchBar(`${perkQuery} name:"${itemToGet?.match}"`);
     const visibleItems = getVisibleItems();
     itemToMove = visibleItems[0];
   } else {
-    nonPerkQuery += ` ${perkQuery} -is:incurrentchar`;
+    nonPerkQuery += ` ${perkQuery} -is:incurrentchar -is:postmaster`;
     await populateSearchBar(nonPerkQuery);
     const filteredItems = getVisibleItems();
     if (filteredItems.length > 0) {
@@ -316,7 +330,7 @@ function getPerkQuery(query: string) {
 }
 
 async function handleStartFarmingMode() {
-  console.log('Starting farming mode');
+  infoLog('voice dim', 'Starting farming mode');
   await openCurrentCharacterLoadoutMenu();
   const farmingSpan = document.querySelector('.loadout-menu ul li span');
   farmingSpan?.dispatchEvent(uiEvents.singleClick);
@@ -329,7 +343,14 @@ function handleStopFarmingMode() {
 
 async function handleEquipMaxPower() {
   await openCurrentCharacterLoadoutMenu();
-  const maxPowerSpan = document.querySelector('span[class^=MaxlightButton]');
+  const xpath = "//span[contains(text(),'Max Power')]";
+  const maxPowerSpan = document.evaluate(
+    xpath,
+    document,
+    null,
+    XPathResult.FIRST_ORDERED_NODE_TYPE,
+    null
+  ).singleNodeValue;
   maxPowerSpan?.dispatchEvent(uiEvents.singleClick);
 }
 
@@ -340,7 +361,7 @@ async function openCurrentCharacterLoadoutMenu() {
 }
 
 async function handleEquipLoadout(loadoutName: string) {
-  console.log('Equipping loadout', loadoutName);
+  infoLog('voice dim', 'Equipping loadout', loadoutName);
   await openCurrentCharacterLoadoutMenu();
   const availableLoadoutNames = getLoadoutNames();
   const loadoutToEquip = getClosestMatch(availableLoadoutNames, loadoutName);
@@ -358,7 +379,14 @@ function getLoadoutNames(): string[] {
 }
 
 async function handleCollectPostmaster() {
-  const postmasterButton = document.querySelector('[class^="PullFromPostmaster"]');
+  const xpath = "//span[contains(text(),'Collect Postmaster')]";
+  const postmasterButton = document.evaluate(
+    xpath,
+    document,
+    null,
+    XPathResult.FIRST_ORDERED_NODE_TYPE,
+    null
+  ).singleNodeValue;
   postmasterButton?.dispatchEvent(uiEvents.singleClick);
   await sleep(500);
   postmasterButton?.dispatchEvent(uiEvents.singleClick);
@@ -404,18 +432,18 @@ function getClosestMatch(availableItems: string[], query: string): FuseMatch | n
   };
   const fuse = new Fuse(availableItems, options);
   const result = fuse.search(query);
-  console.log({ result, query });
+  infoLog('voice dim', { result, query });
 
   if (isAcceptableResult(result)) {
     return { toReplace: query, match: result[0].item };
   }
 
-  console.log("Couldn't find a match. Trying to find match by splitting the current query.");
+  infoLog('voice dim', "Couldn't find a match. Trying to find match by splitting the current query.");
   const splitQuery = query.split(' ');
 
   for (const split of splitQuery) {
     const splitResult = fuse.search(split);
-    console.log({ splitResult, split });
+    infoLog('voice dim', { splitResult, split });
     return isAcceptableResult(splitResult)
       ? { toReplace: split, match: splitResult[0].item }
       : { toReplace: '', match: '' };
@@ -428,54 +456,108 @@ function isAcceptableResult(result: Fuse.FuseResult<string>[]): boolean {
   return result.length > 0 && typeof result[0].score !== 'undefined' && result[0].score < 0.5;
 }
 
-async function populateSearchBar(searchInput: string, clearFirst: boolean = false): Promise<void> {
+async function populateSearchBar(searchInput: string): Promise<void> {
   if (!searchBar) searchBar = <HTMLInputElement>document.getElementsByName('filter')[0];
   if (searchBar) {
     const count = getVisibleItems().length;
-    if (clearFirst) clearSearchBar();
-    searchBar.value += ' ' + searchInput;
-    console.log('Populating search bar with', searchBar.value);
+    const newValue = `${searchBar.value} ${searchInput.trim()}`.trim();
+    searchBar.value = newValue;
+    infoLog('voice dim', 'Populating search bar with', searchBar.value);
     searchBar?.dispatchEvent(uiEvents.input);
     await sleep(50);
     searchBar?.focus();
     searchBar?.dispatchEvent(uiEvents.enter);
+    searchBar?.blur;
 
     await waitForSearchToUpdate(count);
   }
 }
 
-function clearSearchBar() {
-  console.log('Clearing search');
+async function clearSearchBar() {
+  infoLog('voice dim', 'Clearing search bar');
   const clearButton = document.querySelector('.filter-bar-button[title^=Clear]');
+  const initialCount = getVisibleItems().length;
+  let waitForUpdate = false;
+  console.log(clearButton);
   clearButton?.dispatchEvent(uiEvents.singleClick);
+  if (searchBar && searchBar?.value !== '') {
+    searchBar.value = '';
+    waitForUpdate = true;
+  }
+  searchBar?.blur;
+  if (waitForUpdate) await waitForSearchToUpdate(initialCount);
 }
 
 function handleShortcutPress() {
-  if (!speechService.recognizing) {
-    speechService.startListening();
+  if (!annyang.isListening()) {
+    annyang.start();
   } else {
-    speechService.stopListening();
+    annyang.abort();
   }
 }
 
+function initializeShortcutListening() {
+  annyang.addCallback('result', (userSaid: string[]) => {
+    infoLog('shortcut', userSaid);
+    const transcript = userSaid[0].trim().toLowerCase();
+    updateUiTranscript(transcript, true);
+    parseSpeech(transcript);
+    annyang.abort();
+    setTimeout(() => updateUiTranscript('', false), 7000);
+  });
+}
+
+function initializeAlwaysListening() {
+  annyang.start({ autoRestart: listeningOptions.active, continuous: listeningOptions.active });
+  annyang.addCallback('result', (userSaid?: string[] | undefined) => {
+    infoLog('voice dim', { userSaid });
+    if (userSaid) {
+      let actionPerformed = false;
+      for (let said of userSaid) {
+        said = said.trim().toLowerCase();
+        const ap = listeningOptions.activationPhrase;
+        const phrases = [ap];
+
+        if (ap.includes('dim')) phrases.push(ap.replace('dim', 'them'));
+
+        for (let phrase of phrases) {
+          // include a space intentionally
+          if (said.includes(`${phrase} `)) {
+            const transcript = said.split(`${phrase} `)[1];
+            infoLog('voice dim', { transcript });
+            updateUiTranscript(transcript, true);
+            parseSpeech(transcript);
+            actionPerformed = true;
+            setTimeout(() => updateUiTranscript('', false), 7000);
+            break;
+          }
+        }
+        if (actionPerformed) break;
+      }
+    }
+  });
+}
+
 chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
-  console.log({ request });
-  if (request.dimShortcutPressed) {
+  infoLog('voice dim', { request });
+  if (request.dimShortcutPressed && !listeningOptions.active) {
     sendResponse({ ack: 'Acknowledged.' });
     handleShortcutPress();
     return;
   }
   if (request === 'shortcut updated') {
     await getCustomCommands();
-
-    // sendResponse({ ack: 'Acknowledged.' });
+    sendResponse({ ack: 'Acknowledged.' });
+  }
+  if (request === 'listening options updated') {
+    await getAlwaysListeningOptions();
   }
 });
 
 async function getCustomCommands() {
-  const commands = await retrieve('commands');
+  const commands = await retrieve('commands', DEFAULT_COMMANDS);
   mappedCommands = reverseMapCustomCommands(commands);
-  console.log({ commands, mappedCommands });
+  infoLog('voice dim', { commands, mappedCommands });
 }
 
 function reverseMapCustomCommands(commands: any) {
@@ -487,6 +569,17 @@ function reverseMapCustomCommands(commands: any) {
     });
   }
   return newCommands;
+}
+
+async function getAlwaysListeningOptions() {
+  listeningOptions = await retrieve('alwaysListening', DEFAULT_ALWAYS_LISTENING);
+  infoLog('voice dim', { listeningOptions });
+  annyang.abort();
+  infoLog('voice dim', 'initializing annyang');
+  annyang.removeCallback();
+  if (listeningOptions.active) initializeAlwaysListening();
+  else initializeShortcutListening();
+  // annyang.debug(true);
 }
 
 function createMicDiv() {
@@ -531,16 +624,15 @@ async function getPerks() {
     'https://raw.githubusercontent.com/DestinyItemManager/d2ai-module/master/voice-dim-valid-perks.json'
   );
   knownPerks = await response.json();
-  console.log({ knownPerks });
+  infoLog('voice dim', { knownPerks });
 }
 
 function init() {
   getPerks();
   getCustomCommands();
+  getAlwaysListeningOptions();
   createMicDiv();
   createHelpDiv();
 }
 
-init();
-
-const speechService = new SpeechService();
+window.addEventListener('load', init);
