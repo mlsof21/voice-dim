@@ -90,7 +90,7 @@ export type AlwaysListening = {
 
 export const DEFAULT_ALWAYS_LISTENING: AlwaysListening = {
   active: false,
-  activationPhrase: 'voice dim',
+  activationPhrase: 'okay ghost',
 };
 
 export function store(key: string, value: any) {
