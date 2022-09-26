@@ -8,7 +8,7 @@ export function infoLog(tag: string, message: unknown, ...args: unknown[]) {
 }
 
 export function debugLog(tag: string, message: unknown, ...args: unknown[]) {
-  console.debug(`debug ${tag}`, message, ...args);
+  console.debug(`[${tag}]`, message, ...args);
 }
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
