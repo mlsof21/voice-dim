@@ -7,6 +7,10 @@ export function infoLog(tag: string, message: unknown, ...args: unknown[]) {
   console.log(`[${tag}]`, message, ...args);
 }
 
+export function debugLog(tag: string, message: unknown, ...args: unknown[]) {
+  console.debug(`debug ${tag}`, message, ...args);
+}
+
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(func: F, waitFor: number = 300) => {
@@ -62,7 +66,7 @@ export async function waitForElementToDisplay(
       } else {
         setTimeout(function () {
           if (timeoutInMs && Date.now() - startTimeInMs > timeoutInMs) {
-            infoLog('voice dim', "couldn't find", selector);
+            debugLog('voice dim', "couldn't find", selector);
             return;
           }
           loopSearch();
