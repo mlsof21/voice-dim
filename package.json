@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "zip": "npm run build && python scripts/build.py",
     "build": "rimraf dist/ && webpack --env mode=production --config webpack.config.js",
-    "watch": "webpack --env mode=development --config webpack.config.js --progress --watch"
+    "watch": "webpack --env mode=development --config webpack.config.js --progress --watch",
+    "update-version": "python scripts/update_version.py"
   },
   "repository": {
     "type": "git",
