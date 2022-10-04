@@ -519,7 +519,7 @@ function initializeAlwaysListening() {
       let actionPerformed = false;
       for (let said of userSaid) {
         said = said.trim().toLowerCase();
-        const ap = listeningOptions.activationPhrase;
+        const ap = listeningOptions.activationPhrase.trim().toLowerCase();
         const phrases = [ap];
 
         if (ap.includes('dim')) phrases.push(ap.replace('dim', 'them'));

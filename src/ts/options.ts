@@ -48,7 +48,7 @@ function onActivationPhraseChange() {
 
   store<AlwaysListening>('alwaysListening', {
     active: listeningToggle.checked,
-    activationPhrase: activationPhrase.value,
+    activationPhrase: activationPhrase.value.trim().toLowerCase(),
   });
   sendListenOptionsMessage();
 }
@@ -61,7 +61,7 @@ function onAlwaysListeningChange(listeningOptions: AlwaysListening) {
 
   store<AlwaysListening>('alwaysListening', {
     active: listeningOptions.active,
-    activationPhrase: listeningOptions.activationPhrase,
+    activationPhrase: listeningOptions.activationPhrase.trim().toLowerCase(),
   });
   sendListenOptionsMessage();
 }

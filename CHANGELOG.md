@@ -1,3 +1,7 @@
+### 1.2.2 - 2022-10-04 - Activation Phrase Fix
+
+- Added fix for capital letter in activation phrase by trimming/lowercasing everywhere
+
 ### 1.2.1 - 2022-10-03 - Only in Inventory
 
 - Added fix for loading DIM on another tab. Previously required reloading the page on the inventory tab. Now Voice DIM will load no matter what page is started on

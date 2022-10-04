@@ -1,16 +1,24 @@
 {
   "name": "Voice DIM",
   "description": "Control DIM with your voice.",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "manifest_version": 2,
   "background": {
-    "scripts": ["js/background.js"]
+    "scripts": [
+      "js/background.js"
+    ]
   },
   "content_scripts": [
     {
-      "matches": ["https://*.destinyitemmanager.com/*"],
-      "js": ["js/voiceDim.js"],
-      "css": ["css/voiceDim.css"]
+      "matches": [
+        "https://*.destinyitemmanager.com/*"
+      ],
+      "js": [
+        "js/voiceDim.js"
+      ],
+      "css": [
+        "css/voiceDim.css"
+      ]
     }
   ],
   "commands": {
@@ -42,5 +50,7 @@
     "https://www.bungie.net/common/**",
     "https://api.speechly.com/**"
   ],
-  "web_accessible_resources": ["icons/icon_large.png"]
+  "web_accessible_resources": [
+    "icons/icon_large.png"
+  ]
 }
