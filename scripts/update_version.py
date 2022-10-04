@@ -48,7 +48,7 @@ def write_new_version(file_path: str, new_version: str, dry_run: bool = False):
         return
 
     with open(file_path, 'w') as f:
-        json.dump(data, f, indent=4)
+        json.dump(data, f, indent=2)
 
 
 def write_changelog_update(file_path: str, new_version: str, dry_run: bool = False):
