@@ -286,7 +286,11 @@ async function getItemToMove(query: string): Promise<Element | null> {
 async function transferItem(item: Element) {
   item.dispatchEvent(uiEvents.singleClick);
   const currentClass = getCurrentCharacterClass();
-  const storeDiv = await waitForElementToDisplay(`[title^="Store"] [data-icon*="${currentClass}"]`);
+  const expandCollapseButton = await waitForElementToDisplay('div[title^="Expand or collapse"]');
+  if (!document.querySelector('div[class^="ItemMoveLocations"]')) {
+    expandCollapseButton?.dispatchEvent(uiEvents.singleClick);
+  }
+  const storeDiv = await waitForElementToDisplay(`[title^="Store"] [data-icon*="${currentClass}"]`, 500);
   storeDiv?.dispatchEvent(uiEvents.singleClick);
 }
 
@@ -551,11 +555,11 @@ chrome.runtime.onMessage.addListener(async function (request, sender, sendRespon
   }
   if (request === 'not on inventory page') {
     infoLog('voice dim', 'no longer on inventory page');
-    hideVoiceDim();
+    stopVoiceDim();
   }
   if (request === 'on inventory page') {
     infoLog('voice dim', 'on inventory page');
-    showVoiceDim();
+    init();
   }
   sendResponse({ ack: 'Acknowledged.' });
   return true;
@@ -567,7 +571,7 @@ async function getCustomCommands() {
   infoLog('voice dim', { commands, mappedCommands });
 }
 
-function reverseMapCustomCommands(commands: any) {
+function reverseMapCustomCommands(commands: Record<string, string[]>) {
   const newCommands: Record<string, string> = {};
   for (const propName in commands) {
     const arr: Array<string> = commands[propName];
@@ -645,28 +649,22 @@ async function getPerks() {
 }
 
 function init() {
-  getPerks();
-  getCustomCommands();
-  getAlwaysListeningOptions();
-  createMicDiv();
-  createHelpDiv();
+  if (window.location.href.includes('inventory')) {
+    getPerks();
+    getCustomCommands();
+    getAlwaysListeningOptions();
+    createMicDiv();
+    createHelpDiv();
+  }
 }
 
 window.addEventListener('load', init);
 
-function hideVoiceDim() {
+function stopVoiceDim() {
   const voiceDimDiv = document.getElementById('voiceDim');
-  if (voiceDimDiv) voiceDimDiv.style.display = 'none';
+  if (voiceDimDiv) voiceDimDiv.remove();
   const voiceDimHelp = document.getElementById('voiceDimHelp');
-  if (voiceDimHelp) voiceDimHelp.style.display = 'none';
+  if (voiceDimHelp) voiceDimHelp.remove();
 
   stopListening();
-}
-
-function showVoiceDim() {
-  const voiceDimDiv = document.getElementById('voiceDim');
-  if (voiceDimDiv) voiceDimDiv.style.display = 'flex';
-  const voiceDimHelp = document.getElementById('voiceDimHelp');
-  if (voiceDimHelp) voiceDimHelp.style.display = 'flex';
-  startListening();
 }

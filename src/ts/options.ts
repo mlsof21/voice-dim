@@ -13,7 +13,7 @@ function onCommandChange() {
   Object.keys(DEFAULT_COMMANDS).forEach((command) => {
     commands[command] = getTextValueById(command);
   });
-  store('commands', commands);
+  store<Record<string, string[]>>('commands', commands);
 
   updateSaveText(true, 'Saved!');
   setTimeout(() => updateSaveText(false), 3000);
@@ -46,7 +46,10 @@ function onActivationPhraseChange() {
   updateSaveText(true, 'Saved!');
   setTimeout(() => updateSaveText(false), 3000);
 
-  store('alwaysListening', { active: listeningToggle.checked, activationPhrase: activationPhrase.value });
+  store<AlwaysListening>('alwaysListening', {
+    active: listeningToggle.checked,
+    activationPhrase: activationPhrase.value,
+  });
   sendListenOptionsMessage();
 }
 
@@ -56,7 +59,10 @@ function onAlwaysListeningChange(listeningOptions: AlwaysListening) {
   updateSaveText(true, 'Saved!');
   setTimeout(() => updateSaveText(false), 3000);
 
-  store('alwaysListening', { active: listeningOptions.active, activationPhrase: listeningOptions.activationPhrase });
+  store<AlwaysListening>('alwaysListening', {
+    active: listeningOptions.active,
+    activationPhrase: listeningOptions.activationPhrase,
+  });
   sendListenOptionsMessage();
 }
 
