@@ -1,10 +1,9 @@
-export interface Action {
-  func: () => void;
-  timeout: number;
-}
-
 export function infoLog(tag: string, message: unknown, ...args: unknown[]) {
   console.log(`[${tag}]`, message, ...args);
+}
+
+export function debugLog(tag: string, message: unknown, ...args: unknown[]) {
+  console.debug(`[${tag}]`, message, ...args);
 }
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -54,7 +53,7 @@ export async function waitForElementToDisplay(
   checkFrequencyInMs: number = 50,
   timeoutInMs: number = 2000
 ): Promise<Element | null> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     var startTimeInMs = Date.now();
     (function loopSearch() {
       if (document.querySelector(selector) != null) {
@@ -62,8 +61,8 @@ export async function waitForElementToDisplay(
       } else {
         setTimeout(function () {
           if (timeoutInMs && Date.now() - startTimeInMs > timeoutInMs) {
-            infoLog('voice dim', "couldn't find", selector);
-            return;
+            debugLog('voice dim', "couldn't find", selector);
+            return reject();
           }
           loopSearch();
         }, checkFrequencyInMs);
@@ -93,13 +92,13 @@ export const DEFAULT_ALWAYS_LISTENING: AlwaysListening = {
   activationPhrase: 'okay ghost',
 };
 
-export function store(key: string, value: any) {
+export function store<T>(key: string, value: T) {
   chrome.storage.local.set({ [key]: value }, () => {
     infoLog('voice dim', 'Stored', key, value);
   });
 }
 
-export function retrieve(key: string, defaultValue: any): Promise<any> {
+export function retrieve<T>(key: string, defaultValue: T): Promise<T> {
   return new Promise((resolve, reject) => {
     chrome.storage.local.get([key], function (result) {
       if (chrome.runtime.lastError) {

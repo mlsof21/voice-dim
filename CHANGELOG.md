@@ -1,3 +1,8 @@
+### 1.2.1 - 2022-10-03 - Only in Inventory
+
+- Added fix for loading DIM on another tab. Previously required reloading the page on the inventory tab. Now Voice DIM will load no matter what page is started on
+- Added fix for a user having the item popup sidebar being collapsed.
+
 ### 1.2.0 - 2022-09-24 - Always Listening
 
 - Added a toggle-able `Always Listening` mode

@@ -1,6 +1,7 @@
 import Fuse from 'fuse.js';
 import {
   AlwaysListening,
+  debugLog,
   DEFAULT_ALWAYS_LISTENING,
   DEFAULT_COMMANDS,
   getVisibleItems,
@@ -197,7 +198,6 @@ async function parseSpeech(this: any, transcript: string) {
     infoLog('voice dim', "Couldn't determine correct action");
     return;
   }
-  infoLog('voice dim', 'Action:', closestAction.match);
 
   query = getNewQuery(query, closestMatch.match);
   await potentialActions[closestAction.match].call(this, query, closestAction.match);
@@ -242,7 +242,7 @@ function getCurrentCharacterClass(): string {
 async function handleItemMovement(query: string, action: string): Promise<void> {
   infoLog('voice dim', 'in handleItemMovement', { query, action });
   const itemToMove = await getItemToMove(query);
-  infoLog('voice dim', { itemToMove });
+  debugLog('voice dim', { itemToMove });
   if (!itemToMove) {
     await clearSearchBar();
     return;
@@ -286,7 +286,11 @@ async function getItemToMove(query: string): Promise<Element | null> {
 async function transferItem(item: Element) {
   item.dispatchEvent(uiEvents.singleClick);
   const currentClass = getCurrentCharacterClass();
-  const storeDiv = await waitForElementToDisplay(`[title^="Store"] [data-icon*="${currentClass}"]`);
+  const expandCollapseButton = await waitForElementToDisplay('div[title^="Expand or collapse"]');
+  if (!document.querySelector('div[class^="ItemMoveLocations"]')) {
+    expandCollapseButton?.dispatchEvent(uiEvents.singleClick);
+  }
+  const storeDiv = await waitForElementToDisplay(`[title^="Store"] [data-icon*="${currentClass}"]`, 500);
   storeDiv?.dispatchEvent(uiEvents.singleClick);
 }
 
@@ -432,18 +436,18 @@ function getClosestMatch(availableItems: string[], query: string): FuseMatch | n
   };
   const fuse = new Fuse(availableItems, options);
   const result = fuse.search(query);
-  infoLog('voice dim', { result, query });
+  debugLog('voice dim', { result, query });
 
   if (isAcceptableResult(result)) {
     return { toReplace: query, match: result[0].item };
   }
 
-  infoLog('voice dim', "Couldn't find a match. Trying to find match by splitting the current query.");
+  debugLog('voice dim', "Couldn't find a match. Trying to find match by splitting the current query.");
   const splitQuery = query.split(' ');
 
   for (const split of splitQuery) {
     const splitResult = fuse.search(split);
-    infoLog('voice dim', { splitResult, split });
+    debugLog('voice dim', { splitResult, split });
     return isAcceptableResult(splitResult)
       ? { toReplace: split, match: splitResult[0].item }
       : { toReplace: '', match: '' };
@@ -478,7 +482,6 @@ async function clearSearchBar() {
   const clearButton = document.querySelector('.filter-bar-button[title^=Clear]');
   const initialCount = getVisibleItems().length;
   let waitForUpdate = false;
-  console.log(clearButton);
   clearButton?.dispatchEvent(uiEvents.singleClick);
   if (searchBar && searchBar?.value !== '') {
     searchBar.value = '';
@@ -498,8 +501,9 @@ function handleShortcutPress() {
 
 function initializeShortcutListening() {
   annyang.addCallback('result', (userSaid: string[]) => {
-    infoLog('shortcut', userSaid);
+    debugLog('shortcut', userSaid);
     const transcript = userSaid[0].trim().toLowerCase();
+    infoLog('voice dim', 'Heard', transcript);
     updateUiTranscript(transcript, true);
     parseSpeech(transcript);
     annyang.abort();
@@ -510,7 +514,7 @@ function initializeShortcutListening() {
 function initializeAlwaysListening() {
   annyang.start({ autoRestart: listeningOptions.active, continuous: listeningOptions.active });
   annyang.addCallback('result', (userSaid?: string[] | undefined) => {
-    infoLog('voice dim', { userSaid });
+    debugLog('voice dim', { userSaid });
     if (userSaid) {
       let actionPerformed = false;
       for (let said of userSaid) {
@@ -524,7 +528,7 @@ function initializeAlwaysListening() {
           // include a space intentionally
           if (said.includes(`${phrase} `)) {
             const transcript = said.split(`${phrase} `)[1];
-            infoLog('voice dim', { transcript });
+            infoLog('voice dim', 'Heard', transcript);
             updateUiTranscript(transcript, true);
             parseSpeech(transcript);
             actionPerformed = true;
@@ -539,19 +543,26 @@ function initializeAlwaysListening() {
 }
 
 chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
-  infoLog('voice dim', { request });
+  infoLog('voice dim', 'Message received', { request });
   if (request.dimShortcutPressed && !listeningOptions.active) {
-    sendResponse({ ack: 'Acknowledged.' });
     handleShortcutPress();
-    return;
   }
   if (request === 'shortcut updated') {
     await getCustomCommands();
-    sendResponse({ ack: 'Acknowledged.' });
   }
   if (request === 'listening options updated') {
     await getAlwaysListeningOptions();
   }
+  if (request === 'not on inventory page') {
+    infoLog('voice dim', 'no longer on inventory page');
+    stopVoiceDim();
+  }
+  if (request === 'on inventory page') {
+    infoLog('voice dim', 'on inventory page');
+    init();
+  }
+  sendResponse({ ack: 'Acknowledged.' });
+  return true;
 });
 
 async function getCustomCommands() {
@@ -560,7 +571,7 @@ async function getCustomCommands() {
   infoLog('voice dim', { commands, mappedCommands });
 }
 
-function reverseMapCustomCommands(commands: any) {
+function reverseMapCustomCommands(commands: Record<string, string[]>) {
   const newCommands: Record<string, string> = {};
   for (const propName in commands) {
     const arr: Array<string> = commands[propName];
@@ -574,12 +585,22 @@ function reverseMapCustomCommands(commands: any) {
 async function getAlwaysListeningOptions() {
   listeningOptions = await retrieve('alwaysListening', DEFAULT_ALWAYS_LISTENING);
   infoLog('voice dim', { listeningOptions });
-  annyang.abort();
-  infoLog('voice dim', 'initializing annyang');
-  annyang.removeCallback();
-  if (listeningOptions.active) initializeAlwaysListening();
-  else initializeShortcutListening();
+  startListening();
   // annyang.debug(true);
+}
+
+function startListening() {
+  annyang.abort();
+  annyang.removeCallback();
+  if (listeningOptions.active) {
+    initializeAlwaysListening();
+  } else {
+    initializeShortcutListening();
+  }
+}
+
+function stopListening() {
+  annyang.abort();
 }
 
 function createMicDiv() {
@@ -628,11 +649,22 @@ async function getPerks() {
 }
 
 function init() {
-  getPerks();
-  getCustomCommands();
-  getAlwaysListeningOptions();
-  createMicDiv();
-  createHelpDiv();
+  if (window.location.href.includes('inventory')) {
+    getPerks();
+    getCustomCommands();
+    getAlwaysListeningOptions();
+    createMicDiv();
+    createHelpDiv();
+  }
 }
 
 window.addEventListener('load', init);
+
+function stopVoiceDim() {
+  const voiceDimDiv = document.getElementById('voiceDim');
+  if (voiceDimDiv) voiceDimDiv.remove();
+  const voiceDimHelp = document.getElementById('voiceDimHelp');
+  if (voiceDimHelp) voiceDimHelp.remove();
+
+  stopListening();
+}
