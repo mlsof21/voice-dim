@@ -8,15 +8,9 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "https://*.destinyitemmanager.com/*"
-      ],
-      "js": [
-        "js/voiceDim.js"
-      ],
-      "css": [
-        "css/voiceDim.css"
-      ]
+      "matches": ["https://*.destinyitemmanager.com/*"],
+      "js": ["js/voiceDim.js"],
+      "css": ["css/voiceDim.css"]
     }
   ],
   "commands": {
@@ -42,21 +36,12 @@
     "page": "html/options.html",
     "open_in_tab": true
   },
-  "host_permissions": [
-    "https://www.bungie.net/*"
-  ],
-  "permissions": [
-    "tabs",
-    "storage"
-  ],
+  "host_permissions": ["https://www.bungie.net/*"],
+  "permissions": ["tabs", "storage"],
   "web_accessible_resources": [
     {
-      "resources": [
-        "icons/icon_large.png"
-      ],
-      "matches": [
-        "https://*.destinyitemmanager.com/*"
-      ]
+      "resources": ["icons/icon_large.png"],
+      "matches": ["https://*.destinyitemmanager.com/*"]
     }
   ]
 }
