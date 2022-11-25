@@ -1,3 +1,8 @@
+### 1.2.3 - 2022-11-25 - Parsing Issues
+
+- Weapons with periods in their name (IKELOS weapons, a few others) are now parsed correctly
+- Slight optimization for transferring weapons by name (no longer populates the search bar with `name:"<weapon>"`)
+
 ### 1.2.2 - 2022-10-04 - Activation Phrase Fix
 
 - Added fix for capital letter in activation phrase by trimming/lowercasing everywhere
