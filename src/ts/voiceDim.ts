@@ -217,8 +217,9 @@ async function handleStoreItem(query: string) {
     await clearSearchBar();
     return;
   }
-  await populateSearchBar(`name:"${itemToStore?.match}"`);
-  const itemDiv = availableItems[itemToStore.match];
+  // probably not necessary since we're just using the element returned above
+  // await populateSearchBar(`name:"${itemToStore?.match}"`);
+  const itemDiv = availableItems[itemToStore.match].item;
   itemDiv?.dispatchEvent(uiEvents.singleClick);
   const vaultDiv = await waitForElementToDisplay('.item-popup [title^="Vault"]');
   vaultDiv?.dispatchEvent(uiEvents.singleClick);
@@ -266,13 +267,20 @@ async function getItemToMove(query: string): Promise<Element | null> {
   let nonPerkQuery = getGenericQuery(splitQuery[0]);
 
   const perkQuery = splitQuery.length > 1 && splitQuery[1] !== '' ? getPerkQuery(splitQuery[1]) : '';
+
+  // getting a specific weapon
   if (nonPerkQuery === '') {
     const availableItems = getAllTransferableItems();
     const itemToGet = getClosestMatch(Object.keys(availableItems), splitQuery[0]);
-    await populateSearchBar(`${perkQuery} name:"${itemToGet?.match}"`);
+    if (!itemToGet) return null;
+    const fullName = availableItems[itemToGet.match].name;
+    debugLog('voice dim', { itemToGet });
+    await populateSearchBar(`${perkQuery} name:"${fullName}"`.trim());
     const visibleItems = getVisibleItems();
     itemToMove = visibleItems[0];
-  } else {
+  }
+  // Getting a generic weapon (solar grenade launcher, kinetic handcannon, etc.)
+  else {
     nonPerkQuery += ` ${perkQuery} -is:incurrentchar -is:postmaster`;
     await populateSearchBar(nonPerkQuery);
     const filteredItems = getVisibleItems();
@@ -287,7 +295,7 @@ async function transferItem(item: Element) {
   item.dispatchEvent(uiEvents.singleClick);
   const currentClass = getCurrentCharacterClass();
   const expandCollapseButton = await waitForElementToDisplay('div[title^="Expand or collapse"]');
-  if (!document.querySelector('div[class^="ItemMoveLocations"]')) {
+  if (!document.querySelector('div[title^="Store"]')) {
     expandCollapseButton?.dispatchEvent(uiEvents.singleClick);
   }
   const storeDiv = await waitForElementToDisplay(`[title^="Store"] [data-icon*="${currentClass}"]`, 500);
@@ -409,15 +417,15 @@ function checkForGenericTerms(queries: Record<string, string>, query: string) {
   return fullQuery;
 }
 
-function getAllTransferableItems(): Record<string, Element> {
-  const items: Record<string, Element> = {};
+function getAllTransferableItems(): Record<string, { name: string; item: Element }> {
+  const items: Record<string, { name: string; item: Element }> = {};
   for (const labelName of transferableItemAriaLabels) {
     const result = document.querySelectorAll(`[aria-label="${labelName}"] .item`);
     const filteredItems = getVisibleItems(result);
     filteredItems.forEach((item) => {
       const split = (<HTMLElement>item).title.split('\n');
       const sanitized = split[0].replaceAll('.', '');
-      items[sanitized] = item;
+      items[sanitized] = { name: split[0], item };
     });
   }
 
@@ -467,14 +475,18 @@ async function populateSearchBar(searchInput: string): Promise<void> {
     const newValue = `${searchBar.value} ${searchInput.trim()}`.trim();
     searchBar.value = newValue;
     infoLog('voice dim', 'Populating search bar with', searchBar.value);
-    searchBar?.dispatchEvent(uiEvents.input);
-    await sleep(50);
-    searchBar?.focus();
-    searchBar?.dispatchEvent(uiEvents.enter);
-    searchBar?.blur;
+    await simulateSearchInput();
 
     await waitForSearchToUpdate(count);
   }
+}
+
+async function simulateSearchInput() {
+  searchBar?.dispatchEvent(uiEvents.input);
+  await sleep(50);
+  searchBar?.focus();
+  searchBar?.dispatchEvent(uiEvents.enter);
+  searchBar?.blur();
 }
 
 async function clearSearchBar() {
@@ -485,9 +497,10 @@ async function clearSearchBar() {
   clearButton?.dispatchEvent(uiEvents.singleClick);
   if (searchBar && searchBar?.value !== '') {
     searchBar.value = '';
+    searchBar?.dispatchEvent(uiEvents.escape);
+    searchBar?.blur();
     waitForUpdate = true;
   }
-  searchBar?.blur;
   if (waitForUpdate) await waitForSearchToUpdate(initialCount);
 }
 
@@ -653,8 +666,8 @@ function init() {
     getPerks();
     getCustomCommands();
     getAlwaysListeningOptions();
-    createMicDiv();
-    createHelpDiv();
+    if (!document.getElementById('voiceDim')) createMicDiv();
+    if (!document.getElementById('voiceDimHelp')) createHelpDiv();
   }
 }
 
