@@ -45,6 +45,7 @@ def write_new_version(file_path: str, new_version: str, dry_run: bool = False):
     data['version'] = f"{new_version}"
 
     if dry_run:
+        print("Not writing to file since dry run")
         return
 
     with open(file_path, 'w') as f:
@@ -63,6 +64,7 @@ def write_changelog_update(file_path: str, new_version: str, dry_run: bool = Fal
         print(data)
 
         if dry_run:
+            print("Not writing to file since dry run")
             return
 
         with open(file_path, 'w') as f:
@@ -107,7 +109,9 @@ def main():
         print(current_version)
 
     next_version = get_next_version(current_version, part)
-    print(next_version)
+
+    print("New version:", next_version)
+    print("Dry run:", dry_run)
 
     for file in files:
         write_new_version(file, next_version, dry_run)
