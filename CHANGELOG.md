@@ -1,3 +1,8 @@
+### 1.2.4 - 2023-02-25 - The One Where IKELOS Weapons Maybe Work
+
+- Weapons with periods AND underscores (IKELOS weapons) are now parsed even better.
+- If a weapon contains a shorthand for a weapon type (IKELOS SMG) is handled since the code no longer only performs one type of search or the other. It will do both types and if a weapon name was matched, it'll override any generic weapon search.
+
 ### 1.2.3 - 2022-11-25 - Parsing Issues
 
 - Weapons with periods in their name (IKELOS weapons, a few others) are now parsed correctly
