@@ -141,19 +141,6 @@ const otherQueries = {
   'has no notes': '-is:hasnotes',
 };
 
-const numberMap = {
-  1: 'one',
-  2: 'two',
-  3: 'three',
-  4: 'four',
-  5: 'five',
-  6: 'six',
-  7: 'seven',
-  8: 'eight',
-  9: 'nine',
-  0: 'zero',
-};
-
 function setSearchBar() {
   return document.getElementsByName('filter').length > 0
     ? <HTMLInputElement>document.getElementsByName('filter')[0]
@@ -275,32 +262,33 @@ async function handleItemMovement(query: string, action: string): Promise<void> 
 }
 
 async function getItemToMove(query: string): Promise<Element | null> {
+  let itemToMove: Element | null = null;
   let splitQuery = query.split(' with ').map((x) => x.trim());
   let nonPerkQuery = getGenericQuery(splitQuery[0]);
 
   const perkQuery = splitQuery.length > 1 && splitQuery[1] !== '' ? getPerkQuery(splitQuery[1]) : '';
 
   // getting a specific weapon
-  // if (nonPerkQuery === '') {
-  const availableItems = getAllTransferableItems();
-  const itemToGet = getClosestMatch(Object.keys(availableItems), splitQuery[0]);
-
-  if (itemToGet !== null && itemToGet.match !== '') {
+  if (nonPerkQuery === '') {
+    const availableItems = getAllTransferableItems();
+    const itemToGet = getClosestMatch(Object.keys(availableItems), splitQuery[0]);
+    if (!itemToGet) return null;
     const fullName = availableItems[itemToGet.match].name;
     debugLog('voice dim', { itemToGet });
     await populateSearchBar(`${perkQuery} name:"${fullName}"`.trim());
     const visibleItems = getVisibleItems();
-    return visibleItems[0];
+    itemToMove = visibleItems[0];
   }
-
   // Getting a generic weapon (solar grenade launcher, kinetic handcannon, etc.)
-  nonPerkQuery += ` ${perkQuery} -is:incurrentchar -is:postmaster`;
-  await populateSearchBar(nonPerkQuery);
-  const filteredItems = getVisibleItems();
-  if (filteredItems.length > 0) {
-    return filteredItems[0];
+  else {
+    nonPerkQuery += ` ${perkQuery} -is:incurrentchar -is:postmaster`;
+    await populateSearchBar(nonPerkQuery);
+    const filteredItems = getVisibleItems();
+    if (filteredItems.length > 0) {
+      itemToMove = filteredItems[0];
+    }
   }
-  return null;
+  return itemToMove;
 }
 
 async function transferItem(item: Element) {
@@ -436,20 +424,12 @@ function getAllTransferableItems(): Record<string, { name: string; item: Element
     const filteredItems = getVisibleItems(result);
     filteredItems.forEach((item) => {
       const split = (<HTMLElement>item).title.split('\n');
-      const sanitized = split[0].replaceAll(/[\._]/g, ' ');
+      const sanitized = split[0].replaceAll('.', '');
       items[sanitized] = { name: split[0], item };
-      items[getSpelledNumbers(split[0])] = { name: split[0], item };
     });
   }
 
   return items;
-}
-
-function getSpelledNumbers(itemName: string) {
-  for (let i = 0; i < 10; i++) {
-    itemName.replaceAll(`${i}`, ' ');
-  }
-  return itemName;
 }
 
 type FuseMatch = {

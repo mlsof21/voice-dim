@@ -38,9 +38,9 @@ chrome.runtime.onMessage.addListener((data: any, sender: chrome.runtime.MessageS
   }
 });
 
-// chrome.runtime.onInstalled.addListener(() => {
-//   openOptionsPage();
-// });
+chrome.runtime.onInstalled.addListener(() => {
+  openOptionsPage();
+});
 
 async function openOptionsPage() {
   const [optionsTab] = await chrome.tabs.query({
