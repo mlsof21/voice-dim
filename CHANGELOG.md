@@ -1,4 +1,9 @@
+### 1.2.6 - 2023-04-10 - Query selector updates
+
+- Update query selectors for `store` and `transfer`
+
 ### 1.2.5 - 2023-02-27 - The Reversion
+
 - Revert previous change since it broke generic queries and item pulls (by weapon/energy type, etc.)
 
 ### 1.2.4 - 2023-02-25 - The One Where IKELOS Weapons Maybe Work

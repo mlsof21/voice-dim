@@ -221,11 +221,12 @@ async function handleStoreItem(query: string) {
   // await populateSearchBar(`name:"${itemToStore?.match}"`);
   const itemDiv = availableItems[itemToStore.match].item;
   itemDiv?.dispatchEvent(uiEvents.singleClick);
-  const vaultDiv = await waitForElementToDisplay('.item-popup [title^="Vault"]');
+  const vaultDiv = await waitForElementToDisplay('.item-popup [title*="vault"]');
   vaultDiv?.dispatchEvent(uiEvents.singleClick);
   await clearSearchBar();
 }
 
+// TODO: probably don't need this anymore
 function getCurrentCharacterClass(): string {
   const currentCharacter = document.querySelector('.character.current');
   if (currentCharacter?.innerHTML.includes('Titan')) {
@@ -293,12 +294,11 @@ async function getItemToMove(query: string): Promise<Element | null> {
 
 async function transferItem(item: Element) {
   item.dispatchEvent(uiEvents.singleClick);
-  const currentClass = getCurrentCharacterClass();
-  const expandCollapseButton = await waitForElementToDisplay('div[title^="Expand or collapse"]');
-  if (!document.querySelector('div[title^="Store"]')) {
+  const expandCollapseButton = await waitForElementToDisplay('.item-popup [title^="Expand or collapse"]');
+  if (!document.querySelector(".item-popup [title*='[P]']")) {
     expandCollapseButton?.dispatchEvent(uiEvents.singleClick);
   }
-  const storeDiv = await waitForElementToDisplay(`[title^="Store"] [data-icon*="${currentClass}"]`, 500);
+  const storeDiv = await waitForElementToDisplay(".item-popup [title*='[P]']", 500);
   storeDiv?.dispatchEvent(uiEvents.singleClick);
 }
 
@@ -399,8 +399,6 @@ async function handleCollectPostmaster() {
     XPathResult.FIRST_ORDERED_NODE_TYPE,
     null
   ).singleNodeValue;
-  postmasterButton?.dispatchEvent(uiEvents.singleClick);
-  await sleep(500);
   postmasterButton?.dispatchEvent(uiEvents.singleClick);
 }
 
