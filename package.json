@@ -1,6 +1,6 @@
 {
   "name": "voice-dim",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "description": "Perform common DIM actions by using speech recognition.",
   "main": "dist/chrome/js/voice-dim.js",
   "scripts": {
