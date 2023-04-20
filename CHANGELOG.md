@@ -1,3 +1,9 @@
+### 1.2.7 - 2023-04-20 - The One About Troubleshooting (and Strand)
+
+- Add `Download Logs` button to the options page
+- Make the mic icon pulse and change color for a more visible representation of the extension being ready to hear a command
+- Add `strand` to energy types
+
 ### 1.2.6 - 2023-04-10 - Query selector updates
 
 - Update query selectors for `store` and `transfer`
