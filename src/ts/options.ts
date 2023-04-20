@@ -4,6 +4,8 @@ import {
   DEFAULT_ALWAYS_LISTENING,
   DEFAULT_COMMANDS,
   infoLog,
+  Log,
+  logs,
   retrieve,
   store,
 } from './common';
@@ -106,6 +108,44 @@ function toggleAlwaysListeningSection(isChecked: boolean) {
   }
 }
 
+function downloadLogsButtonClicked() {
+  console.log({ logs });
+
+  chrome.tabs.query({}, (tabs) => {
+    const dimTabs = tabs.filter((tab) => tab.url?.match(/destinyitemmanager\.com.*inventory/));
+    if (dimTabs && dimTabs[0].id)
+      chrome.tabs.sendMessage(dimTabs[0].id, 'get logs', (response: { ack: string; logs: Log[] }) => {
+        infoLog('voice dim', { response });
+        const { logs } = response;
+
+        createDownloadableFile(transformLogs(logs));
+      });
+  });
+}
+
+function createDownloadableFile(text: string) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/text' }));
+  a.download = 'voiceDim.log';
+  a.click();
+}
+
+function transformLogs(logs: Log[]): string {
+  let fullText = '';
+  for (const log of logs) {
+    const tag = log.tag;
+    const message = typeof log.message === 'string' ? log.message : JSON.stringify(log.message);
+    const args = log.args.length > 0 ? JSON.stringify(log.args) : '';
+
+    fullText += `${tag} ${message} ${args}\n\n`;
+  }
+
+  return fullText;
+}
+chrome.runtime.onMessage.addListener((data: any, sender: chrome.runtime.MessageSender) => {
+  console.log({ data, sender });
+});
+
 window.onload = function () {
   onLoad();
   const alwaysListening = <HTMLInputElement>document.getElementById('alwaysListeningToggle');
@@ -123,4 +163,6 @@ window.onload = function () {
   commandInputs.forEach((input) => {
     input.addEventListener('keydown', debounce(onCommandChange));
   });
+  const downloadLogsButton = <HTMLButtonElement>document.getElementById('downloadLogsButton');
+  downloadLogsButton.addEventListener('click', downloadLogsButtonClicked);
 };

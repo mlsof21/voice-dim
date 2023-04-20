@@ -162,3 +162,13 @@ input:checked + .slider:before {
   display: none;
   margin-left: 20px;
 }
+
+.downloadLogs {
+  background-color: orangered;
+  color: white;
+  border-radius: 5px;
+  border: solid 1px black;
+  padding: 5px;
+  font-weight: 700;
+  font-size: 20px;
+}

@@ -6,6 +6,7 @@ import {
   DEFAULT_COMMANDS,
   getVisibleItems,
   infoLog,
+  logs,
   retrieve,
   sleep,
   waitForElementToDisplay,
@@ -91,6 +92,7 @@ const energyTypeQueries = {
   solar: 'is:solar',
   void: 'is:void',
   stasis: 'is:stasis',
+  strand: 'is:strand',
 };
 
 const rarityQueries = {
@@ -505,8 +507,22 @@ async function clearSearchBar() {
 function handleShortcutPress() {
   if (!annyang.isListening()) {
     annyang.start();
+    updateMicIcon('listening');
   } else {
     annyang.abort();
+    updateMicIcon('notListening');
+  }
+}
+
+function updateMicIcon(newMode: string) {
+  const micIcon = <HTMLElement>document.querySelector('.imageContainer > img');
+  const voiceDimContainer = <HTMLElement>document.getElementById('voiceDim');
+  if (newMode === 'listening') {
+    micIcon.style.filter = 'hue-rotate(90deg)';
+    voiceDimContainer.classList.add('pulse');
+  } else {
+    micIcon.style.filter = '';
+    voiceDimContainer.classList.remove('pulse');
   }
 }
 
@@ -517,8 +533,11 @@ function initializeShortcutListening() {
     infoLog('voice dim', 'Heard', transcript);
     updateUiTranscript(transcript, true);
     parseSpeech(transcript);
+    updateMicIcon('notListening');
     annyang.abort();
-    setTimeout(() => updateUiTranscript('', false), 7000);
+    setTimeout(() => {
+      updateUiTranscript('', false);
+    }, 5000);
   });
 }
 
@@ -571,6 +590,12 @@ chrome.runtime.onMessage.addListener(async function (request, sender, sendRespon
   if (request === 'on inventory page') {
     infoLog('voice dim', 'on inventory page');
     init();
+  }
+  if (request === 'get logs') {
+    sendResponse({
+      ack: 'Acknowledged.',
+      logs: logs.length > 100 ? logs.slice(logs.length - 101, logs.length - 1) : logs,
+    });
   }
   sendResponse({ ack: 'Acknowledged.' });
   return true;
@@ -647,9 +672,6 @@ function createHelpDiv() {
 
   document.body.appendChild(voiceDimHelp);
 }
-
-// function createHelpModal() {}
-// function showHelpModal() {}
 
 async function getPerks() {
   const response = await fetch(
