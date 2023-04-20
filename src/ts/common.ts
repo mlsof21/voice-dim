@@ -1,9 +1,19 @@
+export const logs: Log[] = [];
+
+export type Log = {
+  tag: string;
+  message: unknown;
+  args: unknown[];
+};
+
 export function infoLog(tag: string, message: unknown, ...args: unknown[]) {
   console.log(`[${tag}]`, message, ...args);
+  logs.push({ tag: `[${tag} info]`, message, args });
 }
 
 export function debugLog(tag: string, message: unknown, ...args: unknown[]) {
   console.debug(`[${tag}]`, message, ...args);
+  logs.push({ tag: `[${tag} debug]`, message, args });
 }
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
