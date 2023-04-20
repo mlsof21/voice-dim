@@ -142,9 +142,6 @@ function transformLogs(logs: Log[]): string {
 
   return fullText;
 }
-chrome.runtime.onMessage.addListener((data: any, sender: chrome.runtime.MessageSender) => {
-  console.log({ data, sender });
-});
 
 window.onload = function () {
   onLoad();
