@@ -6,31 +6,66 @@
   </head>
   <body>
     <h1>Voice DIM Options</h1>
+    <div class="section">
+      <button class="downloadLogs" id="downloadLogsButton">Download Logs</button>
+    </div>
+    <h2>Always Listening Mode</h2>
+    <div class="section">
+      <p>
+        Always listening mode requires an activation word/phrase in order for Voice DIM to perform a command. It's
+        recommended to use at least 2 syllables (3 preferred) for your activation word/phrase for better performance.
+      </p>
+      <p>
+        When using your activation phrase, you don't need an extended pause between the phrase and your command. It's
+        not like other "magic word" services where you wait for a prompt. Just say "&lt;activation phrase&gt;
+        &lt;command&gt;", no pause.
+      </p>
+      <div class="alwaysListening">
+        <label class="switch">
+          <input type="checkbox" name="alwaysListeningToggle" id="alwaysListeningToggle" />
+          <span class="slider round"></span>
+        </label>
+        <span>Always listening mode</span>
+        <div class="alwaysListeningInput">
+          <label for="activationPhrase">Activation Phrase:</label><input id="activationPhrase" type="text" />
+        </div>
+      </div>
+      <br />
+      <p>
+        Note: If you include "dim" in your phrase, it is often interpreted as "them" by speech recognition, so I don't
+        recommend including it. That being said, there's a mitigation for it in the code if you do.
+      </p>
+    </div>
+    <h2>Custom Voice Commands</h2>
+    <div class="section">
+      <p>
+        Enter your own custom voice commands for each of the actions below. If you want multiple voice commands to
+        perform the same action, separate the commands with a comma (ex. for <code>Transfer item (not equip)</code>:
+        transfer, transmat). Try not to use similar sounding words for different commands.
+      </p>
+      <div class="commands">
+        <ul class="wrapper">
+          <li class="form-row"><span class="action">Action</span><span class="command">Voice Command</span></li>
 
-    <p>
-      Enter your own custom voice commands for each of the actions below. If you want multiple voice commands to perform
-      the same action, separate the commands with a comma (ex. for <code>Transfer item (not equip)</code>: transfer,
-      transmat). Try not to use similar sounding words for different commands.
-    </p>
-    <ul class="wrapper">
-      <li class="form-row"><span class="action">Action</span><span class="command">Voice Command</span></li>
-      <li class="form-row">
-        <label for="transfer">Transfer item (not equip): </label><input id="transfer" type="text" />
-      </li>
-      <li class="form-row"><label for="equip">Equip item: </label><input id="equip" type="text" /></li>
-      <li class="form-row"><label for="store">Store item in vault: </label><input id="store" type="text" /></li>
-      <li class="form-row"><label for="loadout">Equip loadout: </label><input id="loadout" type="text" /></li>
-      <li class="form-row"><label for="maxPower">Equip max power: </label><input id="maxPower" type="text" /></li>
-      <li class="form-row">
-        <label for="postmaster">Collect postmaster: </label><input id="postmaster" type="text" />
-      </li>
-      <li class="form-row">
-        <label for="startFarming">Start farming mode: </label><input id="startFarming" type="text" />
-      </li>
-      <li class="form-row">
-        <label for="stopFarming">Stop farming mode: </label><input id="stopFarming" type="text" />
-      </li>
-    </ul>
+          <li class="form-row">
+            <label for="transfer">Transfer item (not equip): </label><input id="transfer" type="text" />
+          </li>
+          <li class="form-row"><label for="equip">Equip item: </label><input id="equip" type="text" /></li>
+          <li class="form-row"><label for="store">Store item in vault: </label><input id="store" type="text" /></li>
+          <li class="form-row"><label for="loadout">Equip loadout: </label><input id="loadout" type="text" /></li>
+          <li class="form-row"><label for="maxPower">Equip max power: </label><input id="maxPower" type="text" /></li>
+          <li class="form-row">
+            <label for="postmaster">Collect postmaster: </label><input id="postmaster" type="text" />
+          </li>
+          <li class="form-row">
+            <label for="startFarming">Start farming mode: </label><input id="startFarming" type="text" />
+          </li>
+          <li class="form-row">
+            <label for="stopFarming">Stop farming mode: </label><input id="stopFarming" type="text" />
+          </li>
+        </ul>
+      </div>
+    </div>
     <span class="saveText"></span>
     <script type="text/javascript" src="../js/options.js"></script>
   </body>

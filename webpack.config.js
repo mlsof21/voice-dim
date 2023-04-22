@@ -12,7 +12,6 @@ const configs = browsers.map((browser) => {
       background: path.join(srcDir, 'background.ts'),
       voiceDim: path.join(srcDir, 'voiceDim.ts'),
       options: path.join(srcDir, 'options.ts'),
-      common: path.join(srcDir, 'common.ts'),
     },
     output: {
       path: path.join(__dirname, 'dist', browser, 'js'),
