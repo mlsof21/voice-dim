@@ -29,58 +29,6 @@ export const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(fu
   return debounced;
 };
 
-export function waitForSearchToUpdate(
-  initialCount: number = Infinity,
-  timeoutInMs: number = 3000,
-  checkFrequencyInMs: number = 50
-): Promise<void> {
-  return new Promise((resolve) => {
-    var startTimeInMs = Date.now();
-    (function loopSearch() {
-      const count = getVisibleItems();
-      if (count.length !== initialCount) {
-        clearTimeout();
-        return resolve();
-      } else {
-        setTimeout(function () {
-          if (timeoutInMs && Date.now() - startTimeInMs > timeoutInMs) return;
-          loopSearch();
-        }, checkFrequencyInMs);
-      }
-    })();
-  });
-}
-
-export function getVisibleItems(items: NodeListOf<Element> | undefined = undefined): Element[] {
-  if (!items) items = document.querySelectorAll('div.item');
-  // const result: Element[] = Array.from(items).filter((item) => !item.className.includes('searchHidden'));
-  const result = Array.from(items).filter((item) => parseFloat(window.getComputedStyle(item).opacity) > 0.5);
-  return result;
-}
-
-export async function waitForElementToDisplay(
-  selector: string,
-  checkFrequencyInMs: number = 50,
-  timeoutInMs: number = 2000
-): Promise<Element | null> {
-  return new Promise((resolve, reject) => {
-    var startTimeInMs = Date.now();
-    (function loopSearch() {
-      if (document.querySelector(selector) != null) {
-        return resolve(document.querySelector(selector));
-      } else {
-        setTimeout(function () {
-          if (timeoutInMs && Date.now() - startTimeInMs > timeoutInMs) {
-            debugLog('voice dim', "couldn't find", selector);
-            return reject();
-          }
-          loopSearch();
-        }, checkFrequencyInMs);
-      }
-    })();
-  });
-}
-
 export const DEFAULT_COMMANDS: Record<string, string[]> = {
   transfer: ['transfer'],
   equip: ['equip'],
