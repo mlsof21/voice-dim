@@ -90,6 +90,7 @@ export const DEFAULT_COMMANDS: Record<string, string[]> = {
   postmaster: ['collect postmaster'],
   startFarming: ['start farming mode'],
   stopFarming: ['stop farming mode'],
+  refresh: ['refresh']
 };
 
 export type AlwaysListening = {
