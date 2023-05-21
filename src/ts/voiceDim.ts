@@ -7,15 +7,6 @@ import {
   logs,
   retrieve,
 } from './common';
-import {
-  ammoTypeQueries,
-  armorTypeQueries,
-  energyTypeQueries,
-  otherQueries,
-  rarityQueries,
-  weaponSlotQueries,
-  weaponTypeQueries,
-} from './maps';
 import { SpeechParser } from './speechParser';
 import UiInteractor from './uiInteractor';
 
