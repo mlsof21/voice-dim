@@ -10,6 +10,8 @@ import {
   store,
 } from './common';
 
+const tag = 'options';
+
 function onCommandChange() {
   const commands: Record<string, string[]> = {};
   Object.keys(DEFAULT_COMMANDS).forEach((command) => {
@@ -24,7 +26,7 @@ function onCommandChange() {
     const dimTabs = tabs.filter((tab) => tab.url?.match(/destinyitemmanager\.com.*inventory/));
     if (dimTabs && dimTabs[0].id)
       chrome.tabs.sendMessage(dimTabs[0].id, 'shortcut updated', (response) => {
-        infoLog('voice dim', { response });
+        infoLog(tag, { response });
       });
   });
 }
@@ -34,13 +36,13 @@ function sendListenOptionsMessage() {
     const dimTab = tabs.filter((tab) => tab.url?.match(/destinyitemmanager\.com.*inventory/))[0];
     if (dimTab.id)
       chrome.tabs.sendMessage(dimTab.id, 'listening options updated', (response) => {
-        infoLog('voice dim', { response });
+        infoLog(tag, { response });
       });
   });
 }
 
 function onActivationPhraseChange() {
-  infoLog('voice dim', 'updating activation phrase');
+  infoLog(tag, 'updating activation phrase');
 
   const activationPhrase = <HTMLInputElement>document.getElementById('activationPhrase');
   const listeningToggle = <HTMLInputElement>document.getElementById('alwaysListeningToggle');
@@ -56,7 +58,7 @@ function onActivationPhraseChange() {
 }
 
 function onAlwaysListeningChange(listeningOptions: AlwaysListening) {
-  infoLog('voice dim', 'updating alwaysListening');
+  infoLog(tag, 'updating alwaysListening');
 
   updateSaveText(true, 'Saved!');
   setTimeout(() => updateSaveText(false), 3000);
@@ -115,7 +117,7 @@ function downloadLogsButtonClicked() {
     const dimTabs = tabs.filter((tab) => tab.url?.match(/destinyitemmanager\.com.*inventory/));
     if (dimTabs && dimTabs[0].id)
       chrome.tabs.sendMessage(dimTabs[0].id, 'get logs', (response: { ack: string; logs: Log[] }) => {
-        infoLog('voice dim', { response });
+        infoLog(tag, { response });
         const { logs } = response;
 
         createDownloadableFile(transformLogs(logs));
@@ -156,7 +158,7 @@ window.onload = function () {
   const activationPhraseInput = <HTMLInputElement>document.getElementById('activationPhrase');
   activationPhraseInput?.addEventListener('keydown', debounce(onActivationPhraseChange));
   const commandInputs = document.querySelectorAll('.commands input');
-  infoLog('voice dim', { commandInputs });
+  infoLog(tag, { commandInputs });
   commandInputs.forEach((input) => {
     input.addEventListener('keydown', debounce(onCommandChange));
   });
