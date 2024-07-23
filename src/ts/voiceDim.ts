@@ -347,7 +347,7 @@ function getPerkQuery(query: string) {
 async function handleStartFarmingMode() {
   infoLog(tag, 'Starting farming mode');
   await openCurrentCharacterLoadoutMenu();
-  const farmingSpan = document.querySelector('.loadout-menu ul li span');
+  const farmingSpan = document.querySelector('[class^=LoadoutPopup] ul li span');
   farmingSpan?.dispatchEvent(uiEvents.singleClick);
 }
 
@@ -370,9 +370,9 @@ async function handleEquipMaxPower() {
 }
 
 async function openCurrentCharacterLoadoutMenu() {
-  const currentCharacter = document.querySelector('.character.current');
+  const currentCharacter = document.querySelector('[class*=m_current]');
   currentCharacter?.dispatchEvent(uiEvents.singleClick);
-  await waitForElementToDisplay('.loadout-menu');
+  await waitForElementToDisplay('[class^=LoadoutPopup]');
 }
 
 async function handleEquipLoadout(loadoutName: string) {
@@ -380,13 +380,13 @@ async function handleEquipLoadout(loadoutName: string) {
   await openCurrentCharacterLoadoutMenu();
   const availableLoadoutNames = getLoadoutNames();
   const loadoutToEquip = getClosestMatch(availableLoadoutNames, loadoutName);
-  const loadoutToEquipSpan = document.querySelector(`.loadout-menu span[title="${loadoutToEquip?.match}"]`);
+  const loadoutToEquipSpan = document.querySelector(`[class^=LoadoutPopup] span[title="${loadoutToEquip?.match}"]`);
   loadoutToEquipSpan?.dispatchEvent(uiEvents.singleClick);
 }
 
 function getLoadoutNames(): string[] {
   const loadoutNames: string[] = [];
-  const loadoutSpans = document.querySelectorAll('.loadout-menu li > span[title]:first-child');
+  const loadoutSpans = document.querySelectorAll('[class^=LoadoutPopup] li > span[title]:first-child');
   loadoutSpans.forEach((span) => {
     if (span.textContent) loadoutNames.push(span.textContent);
   });
