@@ -1,3 +1,8 @@
+### 1.3.0 - 2024-07-27 - The One Where It Actually Works When Not Using the Beta
+
+- Fixed Farming mode
+- Fixed basically anything that used the character menu when not using the Beta app
+
 ### 1.2.7 - 2023-04-20 - The One About Troubleshooting (and Strand)
 
 - Add `Download Logs` button to the options page
