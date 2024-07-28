@@ -175,6 +175,7 @@ const potentialActions: ActionFunction = {
   store: handleStoreItem,
   startFarming: handleStartFarmingMode,
   stopFarming: handleStopFarmingMode,
+  refresh: handleRefresh,
   maxPower: handleEquipMaxPower,
   loadout: handleEquipLoadout,
   postmaster: handleCollectPostmaster,
@@ -361,6 +362,13 @@ async function handleStartFarmingMode() {
 function handleStopFarmingMode() {
   const stopButton = document.querySelector('#item-farming button');
   stopButton?.dispatchEvent(uiEvents.singleClick);
+}
+
+function handleRefresh() {
+  infoLog('voice dim', 'Refreshng');
+
+  const refreshButton = document.querySelector('button[title="Refresh Destiny Data [R]"]');
+  refreshButton?.dispatchEvent(uiEvents.singleClick);
 }
 
 async function handleEquipMaxPower() {
