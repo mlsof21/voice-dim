@@ -1,5 +1,7 @@
 export const logs: Log[] = [];
 
+const commonTag = 'common';
+
 export type Log = {
   tag: string;
   message: unknown;
@@ -7,12 +9,12 @@ export type Log = {
 };
 
 export function infoLog(tag: string, message: unknown, ...args: unknown[]) {
-  console.log(`[${tag}]`, message, ...args);
+  console.log(`[voice dim - ${tag}]`, message, ...args);
   logs.push({ tag: `[${tag} info]`, message, args });
 }
 
 export function debugLog(tag: string, message: unknown, ...args: unknown[]) {
-  console.debug(`[${tag}]`, message, ...args);
+  console.debug(`[voice dim - ${tag}]`, message, ...args);
   logs.push({ tag: `[${tag} debug]`, message, args });
 }
 
@@ -71,7 +73,7 @@ export async function waitForElementToDisplay(
       } else {
         setTimeout(function () {
           if (timeoutInMs && Date.now() - startTimeInMs > timeoutInMs) {
-            debugLog('voice dim', "couldn't find", selector);
+            debugLog(commonTag, "couldn't find", selector);
             return reject();
           }
           loopSearch();
@@ -104,7 +106,7 @@ export const DEFAULT_ALWAYS_LISTENING: AlwaysListening = {
 
 export function store<T>(key: string, value: T) {
   chrome.storage.local.set({ [key]: value }, () => {
-    infoLog('voice dim', 'Stored', key, value);
+    infoLog(commonTag, 'Stored', key, value);
   });
 }
 
@@ -115,12 +117,12 @@ export function retrieve<T>(key: string, defaultValue: T): Promise<T> {
         console.error(chrome.runtime.lastError.message);
         reject(chrome.runtime.lastError.message);
       }
-      infoLog('voice dim', { result });
+      infoLog(commonTag, { result });
       if (Object.keys(result).length == 0) {
         store(key, defaultValue);
         resolve(defaultValue);
       }
-      infoLog('voice dim', 'Found', result[key]);
+      infoLog(commonTag, 'Found', result[key]);
       resolve(result[key]);
     });
   });

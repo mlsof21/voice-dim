@@ -1,7 +1,8 @@
 import { infoLog } from './common';
+const tag = 'background';
 
 chrome.commands.onCommand.addListener((command: any) => {
-  infoLog('voice dim', `Command "${command}" triggered`);
+  infoLog(tag, `Command "${command}" triggered`);
   sendDimTabMessage({ dimShortcutPressed: true });
 });
 
@@ -23,30 +24,26 @@ async function getDimTabId(): Promise<number | undefined | null> {
 async function sendDimTabMessage(message: any) {
   const dimTabId = await getDimTabId();
   if (dimTabId) {
-    infoLog('message', 'sending', message);
+    infoLog(tag, 'sending', message);
 
     chrome.tabs.sendMessage(dimTabId, message, (response: any) => {
-      infoLog('voice dim', { response });
+      infoLog(tag, { response });
     });
   }
 }
 
 chrome.runtime.onMessage.addListener((data: any, sender: chrome.runtime.MessageSender) => {
-  infoLog('voice dim', { data });
+  infoLog(tag, { data });
   if (data === 'showOptions') {
     openOptionsPage();
   }
-});
-
-chrome.runtime.onInstalled.addListener(() => {
-  openOptionsPage();
 });
 
 async function openOptionsPage() {
   const [optionsTab] = await chrome.tabs.query({
     url: `chrome-extension://${chrome.runtime.id}\/html\/options.html`,
   });
-  infoLog('voice dim', { optionsTab });
+  infoLog(tag, { optionsTab });
   if (!optionsTab) chrome.tabs.create({ url: '../html/options.html' });
   else {
     chrome.tabs.update(optionsTab.id!, { active: true });
