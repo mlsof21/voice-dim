@@ -347,7 +347,14 @@ function getPerkQuery(query: string) {
 async function handleStartFarmingMode() {
   infoLog(tag, 'Starting farming mode');
   await openCurrentCharacterLoadoutMenu();
-  const farmingSpan = document.querySelector('.loadout-menu ul li span');
+  const xpath = "//span[contains(text(),'Farming Mode')]";
+  const farmingSpan = document.evaluate(
+    xpath,
+    document,
+    null,
+    XPathResult.FIRST_ORDERED_NODE_TYPE,
+    null
+  ).singleNodeValue;
   farmingSpan?.dispatchEvent(uiEvents.singleClick);
 }
 
@@ -370,9 +377,16 @@ async function handleEquipMaxPower() {
 }
 
 async function openCurrentCharacterLoadoutMenu() {
-  const currentCharacter = document.querySelector('.character.current');
+  let currentCharacter;
+  const isBeta = window.location.hostname.startsWith('beta');
+
+  if (isBeta) {
+    currentCharacter = document.querySelector('[class*=m_current]');
+  } else {
+    currentCharacter = document.querySelector("[style*='f2b4c4b2a13d732f7c54008169ecc62b.jpg']"); // indicator in top left of current character
+  }
   currentCharacter?.dispatchEvent(uiEvents.singleClick);
-  await waitForElementToDisplay('.loadout-menu');
+  await waitForElementToDisplay('[placeholder*="Search loadout"]', 50, 5000);
 }
 
 async function handleEquipLoadout(loadoutName: string) {
@@ -380,15 +394,20 @@ async function handleEquipLoadout(loadoutName: string) {
   await openCurrentCharacterLoadoutMenu();
   const availableLoadoutNames = getLoadoutNames();
   const loadoutToEquip = getClosestMatch(availableLoadoutNames, loadoutName);
-  const loadoutToEquipSpan = document.querySelector(`.loadout-menu span[title="${loadoutToEquip?.match}"]`);
+  const loadoutToEquipSpan = document.querySelector(`span[title="${loadoutToEquip?.match}"]`);
   loadoutToEquipSpan?.dispatchEvent(uiEvents.singleClick);
 }
 
 function getLoadoutNames(): string[] {
   const loadoutNames: string[] = [];
-  const loadoutSpans = document.querySelectorAll('.loadout-menu li > span[title]:first-child');
-  loadoutSpans.forEach((span) => {
-    if (span.textContent) loadoutNames.push(span.textContent);
+  const editLoadoutButtons = document.querySelectorAll('[title="Edit Loadout"]');
+
+  editLoadoutButtons.forEach((button) => {
+    const prevSibling = button.previousSibling;
+
+    if (prevSibling?.textContent) {
+      loadoutNames.push(prevSibling.textContent);
+    }
   });
   return loadoutNames;
 }
