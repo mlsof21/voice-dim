@@ -15,13 +15,7 @@ export type FuseMatch = {
   match: string;
 };
 
-export class SpeechParser {
-  knownPerks: string[];
-
-  constructor(_knownPerks: string[]) {
-    this.knownPerks = _knownPerks;
-  }
-
+const SpeechParser = {
   checkForGenericTerms(queries: Record<string, string>, query: string) {
     let fullQuery = '';
     for (const type of Object.keys(queries)) {
@@ -33,8 +27,7 @@ export class SpeechParser {
       }
     }
     return fullQuery;
-  }
-
+  },
   getClosestMatch(availableItems: string[], query: string): FuseMatch | null {
     const options = {
       includeScore: true,
@@ -60,12 +53,11 @@ export class SpeechParser {
     }
 
     return null;
-  }
+  },
 
   isAcceptableResult(result: Fuse.FuseResult<string>[]): boolean {
     return result.length > 0 && typeof result[0].score !== 'undefined' && result[0].score < 0.5;
-  }
-
+  },
   getGenericQuery(query: string) {
     let genericQuery = '';
     const genericQueries = [
@@ -82,9 +74,8 @@ export class SpeechParser {
       genericQuery += this.checkForGenericTerms(gq, query);
     }
     return genericQuery.trim();
-  }
-
-  getPerkQuery(query: string) {
+  },
+  getPerkQuery(query: string, knownPerks: string[]) {
     let perkQuery = '';
     const splitPerkNames = query
       .split(' and ')
@@ -94,10 +85,12 @@ export class SpeechParser {
       .filter((x) => x !== '');
     const perkNames = [];
     for (const perkName of splitPerkNames) {
-      const closestPerk = this.getClosestMatch(this.knownPerks, perkName);
+      const closestPerk = this.getClosestMatch(knownPerks, perkName);
       if (closestPerk && closestPerk.match !== '') perkNames.push(`perkname:"${closestPerk.match}"`);
     }
     perkQuery = perkNames.join(' ');
     return perkQuery;
-  }
-}
+  },
+};
+
+export default SpeechParser;

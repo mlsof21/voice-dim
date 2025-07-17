@@ -1,9 +1,7 @@
 import { debugLog, infoLog, sleep } from './common';
-import { SpeechParser } from './speechParser';
+import SpeechParser from './speechParser';
 
 class UiInteractor {
-  speechParser: SpeechParser;
-
   searchBar: HTMLInputElement | null;
   textContainer: HTMLDivElement | null;
   transcriptTextElement: HTMLElement | null;
@@ -47,8 +45,6 @@ class UiInteractor {
   };
 
   constructor() {
-    this.speechParser = new SpeechParser([]);
-
     this.searchBar =
       document.getElementsByName('filter').length > 0
         ? <HTMLInputElement>document.getElementsByName('filter')[0]
@@ -88,7 +84,7 @@ class UiInteractor {
     infoLog('voice dim', 'Equipping loadout', loadoutName);
     await this.openCurrentCharacterLoadoutMenu();
     const availableLoadoutNames = this.getLoadoutNames();
-    const loadoutToEquip = this.speechParser.getClosestMatch(availableLoadoutNames, loadoutName);
+    const loadoutToEquip = SpeechParser.getClosestMatch(availableLoadoutNames, loadoutName);
     const loadoutToEquipSpan = document.querySelector(`.loadout-menu span[title="${loadoutToEquip?.match}"]`);
     loadoutToEquipSpan?.dispatchEvent(this.uiEvents.singleClick);
   }
@@ -243,7 +239,7 @@ class UiInteractor {
   async handleStoreItem(query: string) {
     await this.populateSearchBar('is:incurrentchar');
     const availableItems = this.getAllTransferableItems();
-    const itemToStore = this.speechParser.getClosestMatch(Object.keys(availableItems), query);
+    const itemToStore = SpeechParser.getClosestMatch(Object.keys(availableItems), query);
     if (!itemToStore || (itemToStore && itemToStore.match === '')) {
       await this.clearSearchBar();
       return;

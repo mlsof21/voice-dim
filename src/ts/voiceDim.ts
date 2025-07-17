@@ -7,7 +7,7 @@ import {
   logs,
   retrieve,
 } from './common';
-import { SpeechParser } from './speechParser';
+import SpeechParser from './speechParser';
 import UiInteractor from './uiInteractor';
 
 const annyang = require('annyang');
@@ -19,7 +19,6 @@ let listeningOptions: AlwaysListening;
 let mappedCommands: Record<string, string> = {};
 
 const uiInteractor = new UiInteractor();
-const speechParser = new SpeechParser(knownPerks);
 
 type ActionFunction = Record<
   string,
@@ -40,13 +39,13 @@ const potentialActions: ActionFunction = {
 export async function parseSpeech(this: any, transcript: string) {
   await uiInteractor.clearSearchBar();
   let query = transcript.trim();
-  const closestMatch = speechParser.getClosestMatch(Object.keys(mappedCommands), query);
+  const closestMatch = SpeechParser.getClosestMatch(Object.keys(mappedCommands), query);
 
   if (!closestMatch) {
     infoLog('voice dim', "Couldn't determine correct action");
     return;
   }
-  const closestAction = speechParser.getClosestMatch(Object.keys(potentialActions), mappedCommands[closestMatch.match]);
+  const closestAction = SpeechParser.getClosestMatch(Object.keys(potentialActions), mappedCommands[closestMatch.match]);
   if (!closestAction) {
     infoLog('voice dim', "Couldn't determine correct action");
     return;
@@ -101,14 +100,15 @@ async function handleItemMovement(query: string, action: string): Promise<void> 
 async function getItemToMove(query: string): Promise<Element | null> {
   let itemToMove: Element | null = null;
   let splitQuery = query.split(' with ').map((x) => x.trim());
-  let nonPerkQuery = speechParser.getGenericQuery(splitQuery[0]);
+  let nonPerkQuery = SpeechParser.getGenericQuery(splitQuery[0]);
 
-  const perkQuery = splitQuery.length > 1 && splitQuery[1] !== '' ? speechParser.getPerkQuery(splitQuery[1]) : '';
+  const perkQuery =
+    splitQuery.length > 1 && splitQuery[1] !== '' ? SpeechParser.getPerkQuery(splitQuery[1], knownPerks) : '';
 
   // getting a specific weapon
   if (nonPerkQuery === '') {
     const availableItems = uiInteractor.getAllTransferableItems();
-    const itemToGet = speechParser.getClosestMatch(Object.keys(availableItems), splitQuery[0]);
+    const itemToGet = SpeechParser.getClosestMatch(Object.keys(availableItems), splitQuery[0]);
     if (!itemToGet) return null;
     const fullName = availableItems[itemToGet.match].name;
     debugLog('voice dim', { itemToGet });
